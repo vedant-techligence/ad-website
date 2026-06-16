@@ -25,7 +25,9 @@ function Signup() {
 
     try {
       await API.post("/auth/register", { name, email, password });
-      navigate("/login");
+      const loginRes = await API.post("/auth/login", { email, password });
+      localStorage.setItem("token", loginRes.data.token);
+      navigate("/onboarding");
     } catch (err) {
       setError(err.response?.data?.message || "Something went wrong.");
     }

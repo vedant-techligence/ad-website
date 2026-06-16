@@ -15,6 +15,9 @@ const userSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
+    businessName: { type: String },
+    industry: { type: String },
+    website: { type: String },
     isProfileComplete: {
       type: Boolean,
       default: false,

@@ -4,6 +4,18 @@ const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const User = require("../models/User");
 
+// Middleware to verify JWT
+const authMiddleware = (req, res, next) => {
+  const token = req.headers.authorization?.split(" ")[1];
+  if (!token) return res.status(401).json({ message: "Unauthorized" });
+  try {
+    req.user = jwt.verify(token, process.env.JWT_SECRET);
+    next();
+  } catch {
+    res.status(401).json({ message: "Invalid token" });
+  }
+};
+
 // REGISTER
 router.post("/register", async (req, res) => {
   const { name, email, password } = req.body;
@@ -53,6 +65,22 @@ router.post("/login", async (req, res) => {
     );
 
     res.status(200).json({ token, isProfileComplete: user.isProfileComplete });
+  } catch (err) {
+    res.status(500).json({ message: "Server error." });
+  }
+});
+
+// ONBOARDING
+router.post("/onboarding", authMiddleware, async (req, res) => {
+  const { businessName, industry, website } = req.body;
+  try {
+    await User.findByIdAndUpdate(req.user.userId, {
+      businessName,
+      industry,
+      website,
+      isProfileComplete: true,
+    });
+    res.status(200).json({ message: "Profile saved." });
   } catch (err) {
     res.status(500).json({ message: "Server error." });
   }
