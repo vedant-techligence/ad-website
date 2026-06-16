@@ -1,97 +1,123 @@
-.navbar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 0.9rem 2.5rem;
-  background-color: rgba(240, 249, 255, 0.85);
-  backdrop-filter: blur(12px);
-  border-bottom: 1px solid var(--border-accent);
-  position: sticky;
-  top: 0;
+.navbar-wrapper {
+  position: fixed;
+  top: 1rem;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 95%;
   z-index: 100;
 }
 
+.navbar {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  background: rgba(255, 255, 255, 0.6);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(200, 220, 240, 0.8);
+  border-radius: 50px;
+  padding: 0.45rem 1.2rem;
+  box-shadow: 0 2px 20px rgba(0, 0, 0, 0.08);
+  width: fit-content;
+  margin: 0 auto;
+}
+
+/* Brand */
 .navbar-brand {
   display: flex;
   align-items: center;
-  gap: 0.6rem;
+  gap: 0.55rem;
+  flex-shrink: 0;
+  text-decoration: none;
+  padding-right: 1rem;
 }
 
-.navbar-logo {
-  font-size: 1.5rem;
-  color: var(--accent-cyan);
+.navbar-logo-img {
+  height: 34px;
+  width: 34px;
+  object-fit: contain;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  padding: 2px;
 }
 
 .navbar-title {
   font-family: var(--font-heading);
-  font-size: 1rem;
-  font-weight: 700;
+  font-size: 0.9rem;
+  font-weight: 900;
+  letter-spacing: 2px;
+  white-space: nowrap;
   color: var(--text-primary);
-  letter-spacing: 3px;
 }
 
+/* Center links */
 .navbar-links {
   display: flex;
   align-items: center;
-  gap: 1.5rem;
+  gap: 0;
 }
 
 .navbar-link {
   font-family: var(--font-body);
-  font-size: 1rem;
-  font-weight: 500;
+  font-size: 0.72rem;
+  font-weight: 600;
   color: var(--text-secondary);
   text-decoration: none;
-  letter-spacing: 1px;
+  letter-spacing: 1.5px;
+  padding: 0.35rem 0.65rem;
   transition: color 0.2s ease;
+  white-space: nowrap;
+  position: relative;
 }
 
-.navbar-link:hover,
-.navbar-link.active {
-  color: var(--accent-cyan);
+.navbar-link::after {
+  content: "";
+  position: absolute;
+  left: 0.65rem;
+  bottom: -1px;
+  height: 2px;
+  width: 0;
+  background: var(--accent-cyan);
+  transition: width 0.3s ease;
 }
 
-.navbar-link-button {
+.navbar-link:hover { color: var(--accent-cyan); }
+.navbar-link:hover::after,
+.navbar-link.active::after { width: calc(100% - 1.3rem); }
+.navbar-link.active { color: var(--accent-cyan); }
+
+/* Right actions */
+.navbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding-left: 1rem;
+  flex-shrink: 0;
+}
+
+.navbar-cta-button {
   font-family: var(--font-heading);
-  font-size: 0.8rem;
+  font-size: 0.7rem;
   font-weight: 700;
-  letter-spacing: 2px;
-  text-transform: uppercase;
-  color: var(--text-primary);
-  text-decoration: none;
-  padding: 0.5rem 1.2rem;
-  border: 1px solid var(--accent-cyan);
-  border-radius: 20px;
-  transition:
-    background-color 0.2s ease,
-    box-shadow 0.2s ease,
-    color 0.2s ease;
-}
-
-.navbar-link-button:hover,
-.navbar-link-button.active {
-  background-color: var(--accent-cyan);
-  color: #ffffff;
-  box-shadow: 0 0 14px rgba(0, 168, 204, 0.4);
-}
-
-.navbar-logout-button {
-  font-family: var(--font-heading);
-  font-size: 0.8rem;
-  font-weight: 700;
-  letter-spacing: 2px;
+  letter-spacing: 1.5px;
   text-transform: uppercase;
   color: var(--text-primary);
   background: transparent;
-  padding: 0.5rem 1.2rem;
-  border: 1px solid var(--accent-cyan);
-  border-radius: 20px;
+  text-decoration: none;
+  padding: 0.4rem 1.1rem;
+  border: 1.5px solid var(--text-primary);
+  border-radius: 50px;
   cursor: pointer;
-  transition: background-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
+  transition: border-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
+  white-space: nowrap;
 }
 
-.navbar-logout-button:hover {
-  background-color: var(--accent-cyan);
-  color: #ffffff;
-  box-shadow: 0 0 14px rgba(0, 168, 204, 0.4);
+.navbar-cta-button:hover {
+  border-color: var(--accent-cyan);
+  color: var(--accent-cyan);
+  box-shadow: 0 0 10px rgba(0, 168, 204, 0.2);
+}
+
+body {
+  padding-top: 5rem;
 }

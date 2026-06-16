@@ -3,8 +3,6 @@ const mongoose = require("mongoose");
 const cors = require("cors");
 const helmet = require("helmet");
 const rateLimit = require("express-rate-limit");
-const mongoSanitize = require("express-mongo-sanitize");
-const xss = require("xss-clean");
 const hpp = require("hpp");
 require("dotenv").config();
 
@@ -25,11 +23,18 @@ app.use(cors({
 // Body parser with size limit
 app.use(express.json({ limit: "10kb" }));
 
-// Sanitize against NoSQL injection (e.g. { "$gt": "" } in body)
-app.use(mongoSanitize());
-
-// Sanitize against XSS (strip HTML tags from input)
-app.use(xss());
+// Sanitize req.body: strip $ keys (NoSQL injection) and HTML tags (XSS)
+const sanitizeValue = (val) => {
+  if (typeof val === "string") return val.replace(/<[^>]*>/g, "");
+  if (typeof val === "object" && val !== null) {
+    Object.keys(val).forEach((k) => {
+      if (k.startsWith("$")) delete val[k];
+      else val[k] = sanitizeValue(val[k]);
+    });
+  }
+  return val;
+};
+app.use((req, _res, next) => { sanitizeValue(req.body); next(); });
 
 // Prevent HTTP parameter pollution
 app.use(hpp());
