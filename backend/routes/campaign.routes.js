@@ -153,8 +153,77 @@ router.get("/:id", authMiddleware, async (req, res) => {
   }
 });
 
+const pricingConfig = require("../config/pricing");
+
+router.post("/:id/estimate", authMiddleware, async (req, res) => {
+  try {
+    const campaign = await Campaign.findOne({
+      _id: req.params.id,
+      owner: req.user.userId,
+    });
+    if (!campaign) {
+      return res.status(404).json({ message: "Campaign not found." });
+    }
+
+    if (!campaign.startDate || !campaign.endDate || !campaign.repeatRate) {
+      return res
+        .status(400)
+        .json({
+          message: "Campaign is missing startDate, endDate, or repeatRate.",
+        });
+    }
+
+    const msPerDay = 1000 * 60 * 60 * 24;
+    const durationDays = Math.max(
+      1,
+      Math.ceil(
+        (new Date(campaign.endDate) - new Date(campaign.startDate)) / msPerDay,
+      ),
+    );
+
+    const { BASE_RATE_PER_REPEAT_PER_DAY, PLATFORM_FEE_PERCENT, GST_PERCENT } =
+      pricingConfig;
+
+    const baseCost =
+      durationDays * campaign.repeatRate * BASE_RATE_PER_REPEAT_PER_DAY;
+    const platformFee = (baseCost * PLATFORM_FEE_PERCENT) / 100;
+    const subtotal = baseCost + platformFee;
+    const gst = (subtotal * GST_PERCENT) / 100;
+    const estimatedCost = Math.round(subtotal + gst);
+
+    const avgDailyCost = Math.round((estimatedCost / durationDays) * 100) / 100;
+    let budgetWarning = null;
+    if (campaign.dailyBudgetCap && avgDailyCost > campaign.dailyBudgetCap) {
+      budgetWarning = `Estimated average daily cost (₹${avgDailyCost}) exceeds your dailyBudgetCap (₹${campaign.dailyBudgetCap}).`;
+    }
+
+    campaign.estimatedCost = estimatedCost;
+    await campaign.save();
+
+    return res.status(200).json({
+      campaignId: campaign._id,
+      durationDays,
+      repeatRate: campaign.repeatRate,
+      breakdown: { baseCost, platformFee, gst, estimatedCost },
+      avgDailyCost,
+      dailyBudgetCap: campaign.dailyBudgetCap,
+      budgetWarning,
+    });
+  } catch (err) {
+    console.error("Estimate calculation error:", err);
+    return res
+      .status(500)
+      .json({ message: "Failed to calculate estimate.", error: err.message });
+  }
+});
+
 router.post("/", authMiddleware, uploadCampaignFiles, async (req, res) => {
   const files = req.files || [];
+  console.log("BODY:", req.body);
+  console.log(
+    "FILES:",
+    files.map((f) => f.originalname),
+  );
 
   try {
     const {

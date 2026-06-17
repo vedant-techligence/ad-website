@@ -213,7 +213,7 @@ campaignSchema.pre("validate", function (next) {
   if (this.startDate && this.endDate && this.endDate <= this.startDate) {
     return next(new Error("endDate must be after startDate"));
   }
-  next();
+  
 });
 
 module.exports = mongoose.model("Campaign", campaignSchema);

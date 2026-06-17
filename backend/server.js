@@ -13,7 +13,11 @@ const { connectDatabase } = require("./config/db");
 const app = express();
 
 // Security headers
-app.use(helmet());
+app.use(
+  helmet({
+    crossOriginResourcePolicy: { policy: "cross-origin" },
+  }),
+);
 
 // Restrict CORS to frontend origin only
 app.use(cors({
