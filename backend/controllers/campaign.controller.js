@@ -1,6 +1,8 @@
-import { Campaign } from "../models/campaign.model.js";
 import { uploadVideoToCloudinary } from "../config/cloudinary.js";
 import mongoose from "mongoose";
+import { createRequire } from "module";
+const require = createRequire(import.meta.url);
+const Campaign = require("../models/Campaign.js");
 /**
  * POST /api/campaigns
  * Creates a campaign in "draft" status after uploading the video to Cloudinary.
