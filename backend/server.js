@@ -1,12 +1,14 @@
 const express = require("express");
-const mongoose = require("mongoose");
 const cors = require("cors");
 const helmet = require("helmet");
 const rateLimit = require("express-rate-limit");
 const hpp = require("hpp");
+const path = require("path");
 require("dotenv").config();
 
 const authRoutes = require("./routes/auth");
+const campaignRoutes = require("./routes/campaigns");
+const { connectDatabase } = require("./config/db");
 
 const app = express();
 
@@ -22,6 +24,7 @@ app.use(cors({
 
 // Body parser with size limit
 app.use(express.json({ limit: "10kb" }));
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 // Sanitize req.body: strip $ keys (NoSQL injection) and HTML tags (XSS)
 const sanitizeValue = (val) => {
@@ -61,13 +64,20 @@ app.use("/api/auth/login", authLimiter);
 app.use("/api/auth/register", authLimiter);
 
 app.use("/api/auth", authRoutes);
+app.use("/api/campaigns", campaignRoutes);
 
-mongoose
-  .connect(process.env.MONGO_URI)
-  .then(() => {
-    console.log("MongoDB connected");
-    app.listen(process.env.PORT, () => {
-      console.log(`Server running on port ${process.env.PORT}`);
+const PORT = Number(process.env.PORT) || 5000;
+
+const startServer = async () => {
+  try {
+    await connectDatabase();
+    app.listen(PORT, () => {
+      console.log(`Server running on port ${PORT}`);
     });
-  })
-  .catch((err) => console.log("DB connection error:", err));
+  } catch (error) {
+    console.error("DB connection error:", error);
+    process.exit(1);
+  }
+};
+
+startServer();

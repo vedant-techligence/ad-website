@@ -29,3 +29,24 @@
   color: var(--text-secondary);
   font-size: 0.95rem;
 }
+
+.dashboard-copy {
+  margin-top: 0.75rem;
+}
+
+.dashboard-link {
+  display: inline-flex;
+  margin-top: 1.25rem;
+  padding: 0.85rem 1.1rem;
+  border-radius: 14px;
+  background: linear-gradient(135deg, var(--accent-cyan), var(--accent-blue));
+  color: #fff;
+  font-family: var(--font-heading);
+  font-size: 0.8rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.dashboard-link:hover {
+  color: #fff;
+}
