@@ -39,7 +39,7 @@ const verificationSchema = new mongoose.Schema(
   {
     status: {
       type: String,
-      enum: ["pending", "approved", "rejected"], // "pending" added —
+      enum: ["pending", "approved", "rejected"], // "pending" added — campaign may not be checked yet
       default: "pending",
     },
     riskLevel: {
@@ -78,7 +78,7 @@ const campaignSchema = new mongoose.Schema(
       required: true,
     },
 
-    // ---- Ad content (what the ad says / where it physically shows) ----
+    // ---- Ad content (friend's fields — what the ad says / where it physically shows) ----
     title: {
       type: String,
       required: true,
@@ -130,7 +130,7 @@ const campaignSchema = new mongoose.Schema(
       },
     },
 
-    // ---- Targeting  ----
+    // ---- Targeting (your fields — who sees the ad) ----
     targeting: {
       locations: [{ type: String }],
       ageRange: {
@@ -145,7 +145,7 @@ const campaignSchema = new mongoose.Schema(
       },
     },
 
-    // ---- Schedule & frequency (how long / how often) ----
+    // ---- Schedule & frequency (your fields — how long / how often) ----
     startDate: {
       type: Date,
       required: true,
@@ -167,13 +167,13 @@ const campaignSchema = new mongoose.Schema(
       min: 0,
     },
 
-    // ---- Pricing  ----
+    // ---- Pricing (your fields) ----
     estimatedCost: {
       type: Number,
       default: 0,
     },
 
-    // ---- Verification ----
+    // ---- Verification (friend's, now optional/pending-aware) ----
     verification: {
       type: verificationSchema,
       default: () => ({}),
@@ -186,7 +186,7 @@ const campaignSchema = new mongoose.Schema(
         "draft", // created, not yet submitted for payment
         "pending_payment", // payment initiated, awaiting confirmation
         "paid_pending_verification", // paid, waiting on content moderation
-        "public", // verified + live
+        "public", // verified + live (kept friend's naming instead of "active")
         "rejected", // failed verification
         "completed", // ran its full duration
         "cancelled", // advertiser cancelled
