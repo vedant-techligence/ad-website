@@ -1,14 +1,18 @@
-import { Campaign } from "../models/campaign.model.js";
-import { uploadVideoToCloudinary } from "../config/cloudinary.js";
-import mongoose from "mongoose";
+import { Campaign } from "../models/Campaign.model.js";
+import { uploadMediaToCloudinary } from "../config/cloudinary.js";
+import {
+  classifyFileKind,
+  cleanupLocalFiles,
+} from "../middleware/multer.middleware.js";
+
 /**
  * POST /api/campaigns
- * Creates a campaign in "draft" status after uploading the video to Cloudinary.
- * Expects multipart/form-data: video file + text fields.
+ * Creates a campaign in "draft" status after uploading all media files to Cloudinary.
+ * Expects multipart/form-data: 1+ files under "mediaFiles" (at least one video) + text fields.
  */
-
-
 export const createCampaignDraft = async (req, res) => {
+  const files = req.files || [];
+
   try {
     const {
       title,
@@ -34,28 +38,60 @@ export const createCampaignDraft = async (req, res) => {
       !repeatRate ||
       !dailyBudgetCap
     ) {
+      cleanupLocalFiles(files);
       return res.status(400).json({
         success: false,
         message: "Missing required fields.",
       });
     }
 
-    if (!req.file) {
+    if (files.length === 0) {
       return res.status(400).json({
         success: false,
-        message: "Video file is required.",
+        message: "At least one media file (video) is required.",
       });
     }
 
-    // upload to Cloudinary
-    console.log("File received:", req.file);
-    const cloudinaryResponse = await uploadVideoToCloudinary(req.file.path);
-    console.log("Cloudinary response:", cloudinaryResponse);
+    // upload every file to Cloudinary, tagging each with its kind (video/image)
+    const uploadResults = await Promise.all(
+      files.map(async (file) => {
+        const kind = classifyFileKind(file.mimetype);
+        const cloudinaryResponse = await uploadMediaToCloudinary(
+          file.path,
+          kind,
+        );
+        return { file, kind, cloudinaryResponse };
+      }),
+    );
 
-    if (!cloudinaryResponse) {
+    // if any single upload failed, bail out and clean up whatever succeeded
+    const failed = uploadResults.find((r) => !r.cloudinaryResponse);
+    if (failed) {
+      cleanupLocalFiles(files);
       return res.status(500).json({
         success: false,
-        message: "Video upload to Cloudinary failed.",
+        message: "One or more files failed to upload to Cloudinary.",
+      });
+    }
+
+    const mediaAssets = uploadResults.map(
+      ({ file, kind, cloudinaryResponse }) => ({
+        kind,
+        url: cloudinaryResponse.secure_url,
+        publicId: cloudinaryResponse.public_id,
+        thumbnailUrl:
+          kind === "video"
+            ? cloudinaryResponse.eager?.[0]?.secure_url || ""
+            : undefined,
+        originalName: file.originalname,
+      }),
+    );
+
+    // require at least one video among the uploaded assets — mirrors the schema-level check
+    if (!mediaAssets.some((a) => a.kind === "video")) {
+      return res.status(400).json({
+        success: false,
+        message: "At least one video file is required per campaign.",
       });
     }
 
@@ -70,14 +106,10 @@ export const createCampaignDraft = async (req, res) => {
     };
 
     const campaign = await Campaign.create({
-      // advertiser: req.user._id, // assumes auth middleware
-
-      advertiser: new mongoose.Types.ObjectId(),
+      advertiser: req.user._id, // TODO: confirm with auth teammate — may need to be req.user.userId instead
       title,
       description,
-      videoUrl: cloudinaryResponse.secure_url,
-      videoPublicId: cloudinaryResponse.public_id,
-      thumbnailUrl: cloudinaryResponse.eager?.[0]?.secure_url || "",
+      mediaAssets,
       targetUrl,
       targeting: {
         locations: toArray(locations),
@@ -101,6 +133,7 @@ export const createCampaignDraft = async (req, res) => {
       data: campaign,
     });
   } catch (error) {
+    cleanupLocalFiles(files);
     console.error("createCampaignDraft error:", error);
     return res.status(500).json({
       success: false,
@@ -117,9 +150,9 @@ export const createCampaignDraft = async (req, res) => {
  */
 export const getMyCampaigns = async (req, res) => {
   try {
-    const campaigns = await Campaign.find({ advertiser: req.user._id })
+    const campaigns = await Campaign.find({ advertiser: req.user._id }) // TODO: confirm field name with auth teammate
       .sort({ createdAt: -1 })
-      .select("-videoPublicId"); // no need to leak Cloudinary internal id to frontend
+      .select("-mediaAssets.publicId"); // no need to leak Cloudinary internal id to frontend
 
     return res.status(200).json({
       success: true,
@@ -143,7 +176,7 @@ export const getCampaignById = async (req, res) => {
   try {
     const campaign = await Campaign.findOne({
       _id: req.params.id,
-      advertiser: req.user._id, // ensures users can't fetch someone else's campaign
+      advertiser: req.user._id, // TODO: confirm field name with auth teammate
     });
 
     if (!campaign) {
@@ -158,5 +191,28 @@ export const getCampaignById = async (req, res) => {
     return res
       .status(500)
       .json({ success: false, message: "Failed to fetch campaign." });
+  }
+};
+
+/**
+ * GET /api/campaigns/public
+ * Returns only campaigns that are live/active — for whatever surface
+ * displays approved ads to end viewers (e.g. the robots/display screens).
+ * No auth required since this is public-facing.
+ */
+export const getPublicCampaigns = async (_req, res) => {
+  try {
+    const campaigns = await Campaign.find({ status: "active" })
+      .sort({ updatedAt: -1 })
+      .select("-advertiser -mediaAssets.publicId");
+
+    return res
+      .status(200)
+      .json({ success: true, count: campaigns.length, data: campaigns });
+  } catch (error) {
+    console.error("getPublicCampaigns error:", error);
+    return res
+      .status(500)
+      .json({ success: false, message: "Failed to load public campaigns." });
   }
 };

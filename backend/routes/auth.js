@@ -25,6 +25,8 @@ router.post("/register", async (req, res) => {
 
     res.status(201).json({ message: "Account created successfully." });
   } catch (err) {
+    console.error("reg ERROR:", err);
+
     res.status(500).json({ message: "Server error." });
   }
 });
@@ -32,6 +34,8 @@ router.post("/register", async (req, res) => {
 // LOGIN
 router.post("/login", async (req, res) => {
   const { email, password } = req.body;
+  console.log("Login route hit, body:", req.body);
+
 
   try {
     // Check if user exists
@@ -55,6 +59,8 @@ router.post("/login", async (req, res) => {
 
     res.status(200).json({ token, isProfileComplete: user.isProfileComplete });
   } catch (err) {
+    console.error("LOGIN ERROR:", err);
+
     res.status(500).json({ message: "Server error." });
   }
 });
@@ -71,6 +77,7 @@ router.post("/onboarding", authMiddleware, async (req, res) => {
     });
     res.status(200).json({ message: "Profile saved." });
   } catch (err) {
+    console.error(err);
     res.status(500).json({ message: "Server error." });
   }
 });

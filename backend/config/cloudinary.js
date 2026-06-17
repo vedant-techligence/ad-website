@@ -1,8 +1,6 @@
 import { v2 as cloudinary } from "cloudinary";
 import fs from "fs";
-console.log("Cloud:", process.env.CLOUDINARY_CLOUD_NAME);
-console.log("Key:", process.env.CLOUDINARY_API_KEY);
-console.log("Secret:", process.env.CLOUDINARY_API_SECRET);
+
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
   api_key: process.env.CLOUDINARY_API_KEY,
@@ -10,26 +8,32 @@ cloudinary.config({
 });
 
 /**
- * Uploads a local file (saved temporarily by Multer) to Cloudinary as a video,
- * then deletes the local temp file regardless of success/failure.
+ * Uploads a local file (saved temporarily by Multer) to Cloudinary —
+ * works for both images and videos, since campaigns can now have both.
+ * Deletes the local temp file regardless of success/failure.
+ *
+ * @param {string} localFilePath - path to the temp file Multer saved
+ * @param {"video"|"image"} kind - which resource type to upload as
  */
-export const uploadVideoToCloudinary = async (localFilePath) => {
+export const uploadMediaToCloudinary = async (localFilePath, kind) => {
   try {
     if (!localFilePath) return null;
 
+    const isVideo = kind === "video";
+
     const response = await cloudinary.uploader.upload(localFilePath, {
-      resource_type: "video",
+      resource_type: isVideo ? "video" : "image",
       folder: "ad_campaigns",
-      // generates a jpg thumbnail at the 1s mark automatically
-      eager: [{ width: 400, height: 225, crop: "fill", format: "jpg" }],
+      // only generate a thumbnail for videos
+      ...(isVideo && {
+        eager: [{ width: 400, height: 225, crop: "fill", format: "jpg" }],
+      }),
     });
 
     fs.unlinkSync(localFilePath);
 
     return response;
   } catch (error) {
-    
-    
     if (fs.existsSync(localFilePath)) fs.unlinkSync(localFilePath);
     console.error("Cloudinary upload error:", error);
     return null;
