@@ -12,7 +12,24 @@ const INITIAL_FORM = {
   callToAction: "",
   spokenWords: "",
   slideText: "",
+  startDate: "",
+  endDate: "",
+  repeatRate: 3,
+  dailyBudgetCap: "",
 };
+
+const STATUS_LABELS = {
+  draft: "Draft",
+  pending_payment: "Awaiting payment",
+  paid_pending_verification: "In verification",
+  public: "Public",
+  rejected: "Rejected",
+  completed: "Completed",
+  cancelled: "Cancelled",
+};
+
+const PUBLIC_LIKE_STATUSES = new Set(["public", "completed"]);
+const NEGATIVE_STATUSES = new Set(["rejected", "cancelled"]);
 
 const dateFormatter = new Intl.DateTimeFormat("en-IN", {
   dateStyle: "medium",
@@ -31,6 +48,12 @@ function Campaigns() {
   const [success, setSuccess] = useState("");
   const [feedbackTone, setFeedbackTone] = useState("success");
   const [resultModal, setResultModal] = useState(null);
+
+  // ---- Google Drive video import state ----
+  const [driveUrl, setDriveUrl] = useState("");
+  const [importingDrive, setImportingDrive] = useState(false);
+  const [driveError, setDriveError] = useState("");
+  const [importedAssets, setImportedAssets] = useState([]); // assets pulled in from Drive, held until form submit
 
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -79,6 +102,54 @@ function Campaigns() {
     setResultModal(null);
   };
 
+  // ---- Google Drive import handler ----
+  const handleImportFromDrive = async () => {
+    setDriveError("");
+
+    if (!driveUrl.trim()) {
+      setDriveError("Paste a Google Drive share link first.");
+      return;
+    }
+
+    const token = localStorage.getItem("token");
+    if (!token) {
+      navigate("/login");
+      return;
+    }
+
+    setImportingDrive(true);
+
+    try {
+      const response = await API.post(
+        "/campaigns/import-drive-video",
+        { driveUrl: driveUrl.trim() },
+        { headers: { Authorization: `Bearer ${token}` } },
+      );
+
+      setImportedAssets((current) => [...current, response.data.mediaAsset]);
+      setDriveUrl("");
+    } catch (requestError) {
+      if (requestError.response?.status === 401) {
+        localStorage.removeItem("token");
+        navigate("/login");
+        return;
+      }
+
+      setDriveError(
+        requestError.response?.data?.message ||
+          "Couldn't import that video from Google Drive. Check the link and sharing permissions.",
+      );
+    } finally {
+      setImportingDrive(false);
+    }
+  };
+
+  const removeImportedAsset = (storedName) => {
+    setImportedAssets((current) =>
+      current.filter((asset) => asset.storedName !== storedName),
+    );
+  };
+
   const handleSubmit = async (event) => {
     event.preventDefault();
     setError("");
@@ -86,13 +157,47 @@ function Campaigns() {
     setFeedbackTone("success");
     closeResultModal();
 
-    if (!files.length) {
-      const message = "Upload at least one image or video for the campaign.";
+    // at least one media source — direct upload OR a Drive import — is required
+    if (!files.length && !importedAssets.length) {
+      const message =
+        "Upload at least one image or video, or import one from Google Drive.";
       setError(message);
       setFeedbackTone("error");
       openResultModal({
         type: "error",
         title: "Upload Required",
+        message,
+        details: [],
+      });
+      return;
+    }
+
+    if (
+      !form.startDate ||
+      !form.endDate ||
+      !form.repeatRate ||
+      !form.dailyBudgetCap
+    ) {
+      const message =
+        "Start date, end date, repeat rate, and daily budget cap are all required.";
+      setError(message);
+      setFeedbackTone("error");
+      openResultModal({
+        type: "error",
+        title: "Missing Schedule Details",
+        message,
+        details: [],
+      });
+      return;
+    }
+
+    if (new Date(form.endDate) <= new Date(form.startDate)) {
+      const message = "End date must be after the start date.";
+      setError(message);
+      setFeedbackTone("error");
+      openResultModal({
+        type: "error",
+        title: "Invalid Date Range",
         message,
         details: [],
       });
@@ -109,6 +214,12 @@ function Campaigns() {
     Object.entries(form).forEach(([key, value]) => formData.append(key, value));
     files.forEach((file) => formData.append("mediaFiles", file));
 
+    // pass along any Drive-imported assets as a JSON string —
+    // the backend parses this and merges it with directly-uploaded files
+    if (importedAssets.length) {
+      formData.append("importedMediaAssets", JSON.stringify(importedAssets));
+    }
+
     setSubmitting(true);
 
     try {
@@ -121,28 +232,22 @@ function Campaigns() {
       setCampaigns((current) => [response.data, ...current]);
       setForm(INITIAL_FORM);
       setFiles([]);
+      setImportedAssets([]);
       if (fileInputRef.current) {
         fileInputRef.current.value = "";
       }
 
-      const wasApproved = response.data.verification?.status === "approved";
-      const message = wasApproved
-        ? "Campaign verified and published for robot display."
-        : "Campaign submitted but blocked by automated verification.";
-      const details = [
-        ...new Set([
-          ...(response.data.verification?.flaggedTerms || []).map((term) => `Flagged word: ${term}`),
-          ...(response.data.verification?.issues || []),
-        ]),
-      ];
+      const message =
+        "Campaign saved as a draft. Continue to payment to send it for verification and go live.";
 
       setSuccess(message);
-      setFeedbackTone(wasApproved ? "success" : "warning");
+      setFeedbackTone("success");
+
       openResultModal({
-        type: wasApproved ? "success" : "warning",
-        title: wasApproved ? "Campaign Is Now Public" : "Campaign Blocked",
+        type: "success",
+        title: "Draft Saved",
         message,
-        details,
+        details: [],
       });
     } catch (requestError) {
       if (requestError.response?.status === 401) {
@@ -151,12 +256,13 @@ function Campaigns() {
         return;
       }
 
-      const message = requestError.response?.data?.message || "Failed to submit campaign.";
+      const message =
+        requestError.response?.data?.message || "Failed to save campaign.";
       setError(message);
       setFeedbackTone("error");
       openResultModal({
         type: "error",
-        title: "Verification Failed",
+        title: "Couldn't Save Campaign",
         message,
         details: [],
       });
@@ -168,8 +274,12 @@ function Campaigns() {
   const resolveMediaUrl = (publicUrl) =>
     publicUrl?.startsWith("http") ? publicUrl : `${API_ORIGIN}${publicUrl}`;
 
-  const publicCampaigns = campaigns.filter((campaign) => campaign.isPublic).length;
-  const blockedCampaigns = campaigns.filter((campaign) => campaign.status === "rejected").length;
+  const publicCampaigns = campaigns.filter(
+    (campaign) => campaign.isPublic,
+  ).length;
+  const blockedCampaigns = campaigns.filter(
+    (campaign) => campaign.status === "rejected",
+  ).length;
   const totalAssets = campaigns.reduce(
     (count, campaign) => count + (campaign.mediaAssets?.length || 0),
     0,
@@ -186,7 +296,11 @@ function Campaigns() {
             aria-modal="true"
             aria-labelledby="campaign-result-title"
           >
-            <button className="campaigns-modal-close" type="button" onClick={closeResultModal}>
+            <button
+              className="campaigns-modal-close"
+              type="button"
+              onClick={closeResultModal}
+            >
               x
             </button>
             <p className="campaigns-modal-kicker">
@@ -205,7 +319,11 @@ function Campaigns() {
                 ))}
               </ul>
             )}
-            <button className="campaigns-modal-action" type="button" onClick={closeResultModal}>
+            <button
+              className="campaigns-modal-action"
+              type="button"
+              onClick={closeResultModal}
+            >
               Continue
             </button>
           </div>
@@ -217,8 +335,9 @@ function Campaigns() {
           <p className="campaigns-eyebrow">Ad Verification Control</p>
           <h1>Create Robot-Safe Campaigns</h1>
           <p className="campaigns-hero-copy">
-            Submit the campaign copy, spoken words, slide text, and creative files.
-            Safe campaigns go public automatically after verification.
+            Submit the campaign copy, schedule, spoken words, slide text, and
+            creative files. Campaigns save as drafts, then move to payment and
+            verification before going live on robot displays.
           </p>
           <div className="campaigns-stat-row">
             <div className="campaigns-stat-card">
@@ -238,7 +357,9 @@ function Campaigns() {
         <div className="campaigns-hero-panel">
           <h2>What gets checked</h2>
           <ul>
-            <li>Campaign title, description, CTA, transcript, and slide text</li>
+            <li>
+              Campaign title, description, CTA, transcript, and slide text
+            </li>
             <li>All uploaded file names, formats, and size limits</li>
             <li>Risky or inappropriate words before robot display goes live</li>
           </ul>
@@ -250,7 +371,7 @@ function Campaigns() {
           <div className="campaigns-form-header">
             <div>
               <p className="campaigns-section-label">New Campaign</p>
-              <h2>Upload and verify</h2>
+              <h2>Create campaign draft</h2>
             </div>
             <Link className="campaigns-dashboard-link" to="/dashboard">
               Back to dashboard
@@ -312,6 +433,55 @@ function Campaigns() {
                 value={form.destinationUrl}
                 onChange={handleChange}
                 placeholder="https://example.com/campaign"
+              />
+            </label>
+
+            <label>
+              Start date
+              <input
+                type="date"
+                name="startDate"
+                value={form.startDate}
+                onChange={handleChange}
+                required
+              />
+            </label>
+
+            <label>
+              End date
+              <input
+                type="date"
+                name="endDate"
+                value={form.endDate}
+                onChange={handleChange}
+                required
+              />
+            </label>
+
+            <label>
+              Repeat rate (plays/day)
+              <input
+                type="number"
+                name="repeatRate"
+                min="1"
+                max="20"
+                value={form.repeatRate}
+                onChange={handleChange}
+                required
+              />
+            </label>
+
+            <label>
+              Daily budget cap (₹)
+              <input
+                type="number"
+                name="dailyBudgetCap"
+                min="0"
+                step="1"
+                value={form.dailyBudgetCap}
+                onChange={handleChange}
+                placeholder="500"
+                required
               />
             </label>
           </div>
@@ -384,8 +554,60 @@ function Campaigns() {
             </div>
           )}
 
-          <button className="campaigns-submit" type="submit" disabled={submitting}>
-            {submitting ? "Verifying campaign..." : "Verify and publish"}
+          {/* ---- Google Drive video import section ---- */}
+          <div className="campaigns-drive-import">
+            <p className="campaigns-section-label">
+              Or import a video from Google Drive
+            </p>
+            <div className="campaigns-drive-row">
+              <input
+                type="url"
+                value={driveUrl}
+                onChange={(event) => setDriveUrl(event.target.value)}
+                placeholder="https://drive.google.com/file/d/.../view?usp=sharing"
+              />
+              <button
+                type="button"
+                onClick={handleImportFromDrive}
+                disabled={importingDrive}
+                className="campaigns-drive-import-btn"
+              >
+                {importingDrive ? "Importing..." : "Import"}
+              </button>
+            </div>
+            <span className="campaigns-drive-hint">
+              Sharing must be set to "Anyone with the link." Works best for
+              files under ~30 MB.
+            </span>
+
+            {!!driveError && (
+              <p className="campaigns-message campaigns-error">{driveError}</p>
+            )}
+
+            {!!importedAssets.length && (
+              <div className="campaigns-selected-files">
+                {importedAssets.map((asset) => (
+                  <span key={asset.storedName} className="campaigns-drive-chip">
+                    Imported from Drive
+                    <button
+                      type="button"
+                      onClick={() => removeImportedAsset(asset.storedName)}
+                      aria-label="Remove imported video"
+                    >
+                      x
+                    </button>
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <button
+            className="campaigns-submit"
+            type="submit"
+            disabled={submitting}
+          >
+            {submitting ? "Saving campaign..." : "Save as draft"}
           </button>
         </form>
 
@@ -402,7 +624,13 @@ function Campaigns() {
           ) : campaigns.length ? (
             <div className="campaigns-list">
               {campaigns.map((campaign) => {
-                const isApproved = campaign.verification?.status === "approved";
+                const statusLabel =
+                  STATUS_LABELS[campaign.status] || campaign.status;
+                const badgeTone = PUBLIC_LIKE_STATUSES.has(campaign.status)
+                  ? "campaign-badge-public"
+                  : NEGATIVE_STATUSES.has(campaign.status)
+                    ? "campaign-badge-rejected"
+                    : "campaign-badge-pending";
 
                 return (
                   <article className="campaign-card" key={campaign._id}>
@@ -413,39 +641,53 @@ function Campaigns() {
                           {campaign.brandName} • {campaign.robotPlacement}
                         </p>
                       </div>
-                      <span
-                        className={`campaign-badge ${
-                          isApproved ? "campaign-badge-public" : "campaign-badge-rejected"
-                        }`}
-                      >
-                        {isApproved ? "Public" : "Blocked"}
+                      <span className={`campaign-badge ${badgeTone}`}>
+                        {statusLabel}
                       </span>
                     </div>
 
                     <p className="campaign-card-copy">{campaign.description}</p>
 
-                    <div className="campaign-card-audit">
-                      <p>
-                        Checked: {dateFormatter.format(new Date(campaign.verification.checkedAt))}
+                    {campaign.verification?.checkedAt ? (
+                      <div className="campaign-card-audit">
+                        <p>
+                          Checked:{" "}
+                          {dateFormatter.format(
+                            new Date(campaign.verification.checkedAt),
+                          )}
+                        </p>
+                        <p>
+                          Risk level:{" "}
+                          <span className="campaign-risk">
+                            {campaign.verification.riskLevel}
+                          </span>
+                        </p>
+                        {!!campaign.verification.checksSummary && (
+                          <p>{campaign.verification.checksSummary}</p>
+                        )}
+                      </div>
+                    ) : (
+                      <p className="campaign-card-pending-note">
+                        {campaign.status === "draft"
+                          ? "Draft — complete payment to send this for verification."
+                          : "Verification hasn't run yet."}
                       </p>
-                      <p>
-                        Risk level:{" "}
-                        <span className="campaign-risk">{campaign.verification.riskLevel}</span>
-                      </p>
-                      <p>{campaign.verification.checksSummary}</p>
-                    </div>
+                    )}
 
-                    {!!campaign.verification.flaggedTerms?.length && (
+                    {!!campaign.verification?.flaggedTerms?.length && (
                       <div className="campaign-chip-group">
                         {campaign.verification.flaggedTerms.map((term) => (
-                          <span className="campaign-chip campaign-chip-alert" key={term}>
+                          <span
+                            className="campaign-chip campaign-chip-alert"
+                            key={term}
+                          >
                             {term}
                           </span>
                         ))}
                       </div>
                     )}
 
-                    {!!campaign.verification.issues?.length && (
+                    {!!campaign.verification?.issues?.length && (
                       <ul className="campaign-issues">
                         {campaign.verification.issues.map((issue, index) => (
                           <li key={`${campaign._id}-${index}`}>{issue}</li>
@@ -479,7 +721,8 @@ function Campaigns() {
             </div>
           ) : (
             <p className="campaigns-empty">
-              No campaigns yet. Your approved uploads will appear here as public-ready robot ads.
+              No campaigns yet. Your approved uploads will appear here as
+              public-ready robot ads.
             </p>
           )}
         </div>

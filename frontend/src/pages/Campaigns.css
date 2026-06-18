@@ -358,6 +358,17 @@
   color: #9d2040;
 }
 
+.campaign-badge-pending {
+  background: rgba(198, 126, 16, 0.14);
+  color: #8a4f08;
+}
+
+.campaign-card-pending-note {
+  color: var(--text-muted);
+  font-style: italic;
+  font-size: 0.92rem;
+}
+
 .campaign-chip-group {
   display: flex;
   flex-wrap: wrap;
@@ -458,6 +469,115 @@
 .campaigns-modal-list {
   margin: 1rem 0 0 1rem;
   color: var(--text-secondary);
+}
+
+.campaigns-drive-import {
+  border: 1px dashed rgba(0, 85, 204, 0.24);
+  border-radius: 24px;
+  padding: 1.15rem;
+  background:
+    linear-gradient(180deg, rgba(0, 168, 204, 0.06), rgba(0, 85, 204, 0.025)),
+    rgba(255, 255, 255, 0.6);
+  margin-bottom: 1rem;
+}
+
+.campaigns-drive-row {
+  display: flex;
+  gap: 0.7rem;
+  margin-top: 0.6rem;
+}
+
+.campaigns-drive-row input {
+  flex: 1;
+  border: 1px solid rgba(0, 85, 204, 0.08);
+  border-radius: 18px;
+  padding: 0.9rem 1rem;
+  background: rgba(248, 252, 255, 0.96);
+  color: var(--text-primary);
+  font-size: 1rem;
+  outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.campaigns-drive-row input:focus {
+  border-color: rgba(0, 168, 204, 0.7);
+  box-shadow: 0 0 0 4px rgba(0, 168, 204, 0.12);
+  transform: translateY(-1px);
+}
+
+.campaigns-drive-import-btn {
+  flex-shrink: 0;
+  border: none;
+  border-radius: 18px;
+  padding: 0 1.3rem;
+  background: linear-gradient(135deg, #00abc9, #005cd6 55%, #0b3a98);
+  color: #fff;
+  font-family: var(--font-heading);
+  font-size: 0.85rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease;
+}
+
+.campaigns-drive-import-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 16px 28px rgba(0, 85, 204, 0.2);
+}
+
+.campaigns-drive-import-btn:disabled {
+  cursor: wait;
+  opacity: 0.75;
+}
+
+.campaigns-drive-hint {
+  display: block;
+  margin-top: 0.6rem;
+  color: var(--text-muted);
+  font-weight: 500;
+  font-size: 0.85rem;
+}
+
+.campaigns-drive-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.45rem 0.8rem;
+  border-radius: 999px;
+  background: rgba(0, 168, 204, 0.1);
+  color: #00556f;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.campaigns-drive-chip button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.3rem;
+  height: 1.3rem;
+  border: none;
+  border-radius: 999px;
+  background: rgba(0, 85, 204, 0.14);
+  color: #00556f;
+  font-size: 0.75rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.campaigns-drive-chip button:hover {
+  background: rgba(194, 34, 69, 0.16);
+  color: #9d2040;
+}
+
+@media (max-width: 640px) {
+  .campaigns-drive-row {
+    flex-direction: column;
+  }
+
+  .campaigns-drive-import-btn {
+    padding: 0.85rem 1.25rem;
+  }
 }
 
 .campaigns-modal-action {
