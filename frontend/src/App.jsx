@@ -1,23 +1,20 @@
-<<<<<<< Updated upstream
-import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
+import { BrowserRouter, Navigate, Route, Routes, useLocation } from "react-router-dom";
 import { useEffect } from "react";
-=======
-import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { Toaster } from "react-hot-toast";
 
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
 import { AuthProvider, useAuth } from "./context/AuthContext";
->>>>>>> Stashed changes
+
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import Onboarding from "./pages/Onboarding";
 import Dashboard from "./pages/Dashboard";
 import Campaigns from "./pages/Campaigns";
-<<<<<<< Updated upstream
-import Billing from "./pages/Billing";
-import Navbar from "./components/Navbar";
-import Footer from "./components/Footer";
+import Analytics from "./pages/Analytics";
+import Reports from "./pages/Reports";
+import Notifications from "./pages/Notifications";
+import Geo from "./pages/Geo";
 
 function ScrollToTop() {
   const { pathname } = useLocation();
@@ -28,13 +25,6 @@ function ScrollToTop() {
 
   return null;
 }
-
-function App() {
-=======
-import Analytics from "./pages/Analytics";
-import Reports from "./pages/Reports";
-import Notifications from "./pages/Notifications";
-import Geo from "./pages/Geo";
 
 function PublicRoute({ children }) {
   const { token, loading } = useAuth();
@@ -91,21 +81,11 @@ function HomeRedirect() {
 }
 
 function AppRoutes() {
->>>>>>> Stashed changes
   return (
     <BrowserRouter>
       <ScrollToTop />
       <Navbar />
       <Routes>
-<<<<<<< Updated upstream
-        <Route path="/login" element={<Login />} />
-        <Route path="/signup" element={<Signup />} />
-        <Route path="/onboarding" element={<Onboarding />} />
-        <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/campaigns" element={<Campaigns />} />
-        <Route path="/billing" element={<Billing />} />
-        <Route path="/" element={<Login />} />
-=======
         <Route path="/" element={<HomeRedirect />} />
         <Route
           path="/login"
@@ -180,7 +160,6 @@ function AppRoutes() {
           )}
         />
         <Route path="*" element={<Navigate to="/" replace />} />
->>>>>>> Stashed changes
       </Routes>
       <Footer />
       <Toaster position="top-right" />

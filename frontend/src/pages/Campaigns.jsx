@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import api, { API_ORIGIN } from "../api/axios";
 import "./Campaigns.css";
@@ -58,6 +59,7 @@ function Campaigns() {
   const [importingDrive, setImportingDrive] = useState(false);
   const [driveError, setDriveError] = useState("");
   const [importedAssets, setImportedAssets] = useState([]); // assets pulled in from Drive, held until form submit
+  const navigate = useNavigate();
 
   useEffect(() => {
     let active = true;
@@ -182,22 +184,11 @@ function Campaigns() {
     event.preventDefault();
     setError("");
     setSuccess("");
-<<<<<<< Updated upstream
-    setFeedbackTone("success");
-    closeResultModal();
+    setSubmitting(true);
 
-    // at least one media source — direct upload OR a Drive import — is required
     if (!files.length && !importedAssets.length) {
-      const message =
-        "Upload at least one image or video, or import one from Google Drive.";
-      setError(message);
-      setFeedbackTone("error");
-      openResultModal({
-        type: "error",
-        title: "Upload Required",
-        message,
-        details: [],
-      });
+      setError("Upload at least one image or video, or import one from Google Drive.");
+      setSubmitting(false);
       return;
     }
 
@@ -207,29 +198,14 @@ function Campaigns() {
       !form.repeatRate ||
       !form.dailyBudgetCap
     ) {
-      const message =
-        "Start date, end date, repeat rate, and daily budget cap are all required.";
-      setError(message);
-      setFeedbackTone("error");
-      openResultModal({
-        type: "error",
-        title: "Missing Schedule Details",
-        message,
-        details: [],
-      });
+      setError("Start date, end date, repeat rate, and daily budget cap are all required.");
+      setSubmitting(false);
       return;
     }
 
     if (new Date(form.endDate) <= new Date(form.startDate)) {
-      const message = "End date must be after the start date.";
-      setError(message);
-      setFeedbackTone("error");
-      openResultModal({
-        type: "error",
-        title: "Invalid Date Range",
-        message,
-        details: [],
-      });
+      setError("End date must be after the start date.");
+      setSubmitting(false);
       return;
     }
 
@@ -238,50 +214,26 @@ function Campaigns() {
       navigate("/login");
       return;
     }
-=======
-    setSubmitting(true);
->>>>>>> Stashed changes
 
     const formData = new FormData();
     Object.entries(form).forEach(([key, value]) => formData.append(key, value));
     files.forEach((file) => formData.append("mediaFiles", file));
 
-<<<<<<< Updated upstream
-    // pass along any Drive-imported assets as a JSON string —
-    // the backend parses this and merges it with directly-uploaded files
     if (importedAssets.length) {
       formData.append("importedMediaAssets", JSON.stringify(importedAssets));
     }
 
-    setSubmitting(true);
-
     try {
-      const response = await API.post("/campaigns", formData, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      setCampaigns((current) => [response.data, ...current]);
-      setForm(INITIAL_FORM);
-      setFiles([]);
-      setImportedAssets([]);
-      if (fileInputRef.current) {
-        fileInputRef.current.value = "";
+      if (editingId) {
+        await api.patch(`/campaigns/${editingId}`, formData);
+        setSuccess("Campaign updated successfully.");
+      } else {
+        await api.post("/campaigns", formData);
+        setSuccess("Campaign submitted successfully.");
       }
 
-      const message =
-        "Campaign saved as a draft. Continue to payment to send it for verification and go live.";
-
-      setSuccess(message);
-      setFeedbackTone("success");
-
-      openResultModal({
-        type: "success",
-        title: "Draft Saved",
-        message,
-        details: [],
-      });
+      resetForm({ clearFeedback: false });
+      await loadCampaigns();
     } catch (requestError) {
       if (requestError.response?.status === 401) {
         localStorage.removeItem("token");
@@ -289,32 +241,7 @@ function Campaigns() {
         return;
       }
 
-      const message =
-        requestError.response?.data?.message || "Failed to save campaign.";
-      setError(message);
-      setFeedbackTone("error");
-      openResultModal({
-        type: "error",
-        title: "Couldn't Save Campaign",
-        message,
-        details: [],
-      });
-=======
-    try {
-      if (editingId) {
-        await api.patch(`/campaigns/${editingId}`, formData);
-        resetForm({ clearFeedback: false });
-        setSuccess("Campaign updated successfully.");
-      } else {
-        await api.post("/campaigns", formData);
-        resetForm({ clearFeedback: false });
-        setSuccess("Campaign submitted successfully.");
-      }
-
-      await loadCampaigns();
-    } catch (requestError) {
       setError(requestError.response?.data?.message || "Failed to save campaign.");
->>>>>>> Stashed changes
     } finally {
       setSubmitting(false);
     }
@@ -323,17 +250,8 @@ function Campaigns() {
   const resolveMediaUrl = (publicUrl) =>
     publicUrl?.startsWith("http") ? publicUrl : `${API_ORIGIN}${publicUrl}`;
 
-<<<<<<< Updated upstream
-  const publicCampaigns = campaigns.filter(
-    (campaign) => campaign.isPublic,
-  ).length;
-  const blockedCampaigns = campaigns.filter(
-    (campaign) => campaign.status === "rejected",
-  ).length;
-=======
   const publicCampaigns = campaigns.filter((campaign) => campaign.isPublic).length;
-  const blockedCampaigns = campaigns.filter((campaign) => campaign.publicationStatus === "blocked").length;
->>>>>>> Stashed changes
+  const blockedCampaigns = campaigns.filter((campaign) => campaign.status === "rejected").length;
   const totalAssets = campaigns.reduce(
     (count, campaign) => count + (campaign.mediaAssets?.length || 0),
     0,
@@ -341,65 +259,14 @@ function Campaigns() {
 
   return (
     <div className="campaigns-page">
-<<<<<<< Updated upstream
-      {resultModal && (
-        <div className="campaigns-modal-backdrop" onClick={closeResultModal}>
-          <div
-            className={`campaigns-modal campaigns-modal-${resultModal.type}`}
-            onClick={(event) => event.stopPropagation()}
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="campaign-result-title"
-          >
-            <button
-              className="campaigns-modal-close"
-              type="button"
-              onClick={closeResultModal}
-            >
-              x
-            </button>
-            <p className="campaigns-modal-kicker">
-              {resultModal.type === "success"
-                ? "Verification Complete"
-                : resultModal.type === "warning"
-                  ? "Manual Attention Needed"
-                  : "Submission Error"}
-            </p>
-            <h2 id="campaign-result-title">{resultModal.title}</h2>
-            <p className="campaigns-modal-message">{resultModal.message}</p>
-            {!!resultModal.details?.length && (
-              <ul className="campaigns-modal-list">
-                {resultModal.details.map((detail, index) => (
-                  <li key={`${detail}-${index}`}>{detail}</li>
-                ))}
-              </ul>
-            )}
-            <button
-              className="campaigns-modal-action"
-              type="button"
-              onClick={closeResultModal}
-            >
-              Continue
-            </button>
-          </div>
-        </div>
-      )}
-
-=======
->>>>>>> Stashed changes
       <section className="campaigns-hero">
         <div className="campaigns-hero-copy-block">
           <p className="campaigns-eyebrow">Campaign Management</p>
           <h1>Create and manage robot campaigns</h1>
           <p className="campaigns-hero-copy">
-<<<<<<< Updated upstream
             Submit the campaign copy, schedule, spoken words, slide text, and
             creative files. Campaigns save as drafts, then move to payment and
             verification before going live on robot displays.
-=======
-            Keep your original campaign workflow, while now supporting update, delete,
-            reporting, analytics, health scoring, and geo tracking behind the scenes.
->>>>>>> Stashed changes
           </p>
           <div className="campaigns-stat-row">
             <div className="campaigns-stat-card">
@@ -419,17 +286,11 @@ function Campaigns() {
         <div className="campaigns-hero-panel">
           <h2>What is included now</h2>
           <ul>
-<<<<<<< Updated upstream
             <li>
               Campaign title, description, CTA, transcript, and slide text
             </li>
             <li>All uploaded file names, formats, and size limits</li>
             <li>Risky or inappropriate words before robot display goes live</li>
-=======
-            <li>CRUD campaign management with policy verification and health scoring</li>
-            <li>Analytics, reports, notifications, and geo pages linked from the main nav</li>
-            <li>Mock AI-ready backend endpoints for future media intelligence integrations</li>
->>>>>>> Stashed changes
           </ul>
         </div>
       </section>
@@ -438,13 +299,8 @@ function Campaigns() {
         <form className="campaigns-form-card" onSubmit={handleSubmit}>
           <div className="campaigns-form-header">
             <div>
-<<<<<<< Updated upstream
               <p className="campaigns-section-label">New Campaign</p>
               <h2>Create campaign draft</h2>
-=======
-              <p className="campaigns-section-label">{editingId ? "Edit Campaign" : "New Campaign"}</p>
-              <h2>{editingId ? "Update campaign" : "Upload and verify"}</h2>
->>>>>>> Stashed changes
             </div>
             {editingId ? (
               <button className="campaigns-dashboard-link" type="button" onClick={resetForm}>
@@ -616,71 +472,12 @@ function Campaigns() {
             </div>
           )}
 
-<<<<<<< Updated upstream
-          {/* ---- Google Drive video import section ---- */}
-          <div className="campaigns-drive-import">
-            <p className="campaigns-section-label">
-              Or import a video from Google Drive
-            </p>
-            <div className="campaigns-drive-row">
-              <input
-                type="url"
-                value={driveUrl}
-                onChange={(event) => setDriveUrl(event.target.value)}
-                placeholder="https://drive.google.com/file/d/.../view?usp=sharing"
-              />
-              <button
-                type="button"
-                onClick={handleImportFromDrive}
-                disabled={importingDrive}
-                className="campaigns-drive-import-btn"
-              >
-                {importingDrive ? "Importing..." : "Import"}
-              </button>
-            </div>
-            <span className="campaigns-drive-hint">
-              Sharing must be set to "Anyone with the link." Works best for
-              files under ~30 MB.
-            </span>
-
-            {!!driveError && (
-              <p className="campaigns-message campaigns-error">{driveError}</p>
-            )}
-
-            {!!importedAssets.length && (
-              <div className="campaigns-selected-files">
-                {importedAssets.map((asset) => (
-                  <span key={asset.storedName} className="campaigns-drive-chip">
-                    Imported from Drive
-                    <button
-                      type="button"
-                      onClick={() => removeImportedAsset(asset.storedName)}
-                      aria-label="Remove imported video"
-                    >
-                      x
-                    </button>
-                  </span>
-                ))}
-              </div>
-            )}
-          </div>
-
           <button
             className="campaigns-submit"
             type="submit"
             disabled={submitting}
           >
             {submitting ? "Saving campaign..." : "Save as draft"}
-=======
-          <button className="campaigns-submit" type="submit" disabled={submitting}>
-            {submitting
-              ? editingId
-                ? "Updating campaign..."
-                : "Verifying campaign..."
-              : editingId
-                ? "Update campaign"
-                : "Verify and publish"}
->>>>>>> Stashed changes
           </button>
         </form>
 
@@ -720,21 +517,13 @@ function Campaigns() {
                     </div>
 
                     <p className="campaign-card-copy">{campaign.description}</p>
-
-<<<<<<< Updated upstream
                     {campaign.verification?.checkedAt ? (
                       <div className="campaign-card-audit">
                         <p>
-                          Checked:{" "}
-                          {dateFormatter.format(
-                            new Date(campaign.verification.checkedAt),
-                          )}
+                          Checked: {dateFormatter.format(new Date(campaign.verification.checkedAt))}
                         </p>
                         <p>
-                          Risk level:{" "}
-                          <span className="campaign-risk">
-                            {campaign.verification.riskLevel}
-                          </span>
+                          Risk level: <span className="campaign-risk">{campaign.verification.riskLevel}</span>
                         </p>
                         {!!campaign.verification.checksSummary && (
                           <p>{campaign.verification.checksSummary}</p>
@@ -747,13 +536,6 @@ function Campaigns() {
                           : "Verification hasn't run yet."}
                       </p>
                     )}
-=======
-                    <div className="campaign-card-audit">
-                      <p>Checked: {dateFormatter.format(new Date(campaign.verification.checkedAt))}</p>
-                      <p>Risk level: <span className="campaign-risk">{campaign.verification.riskLevel}</span></p>
-                      <p>Health score: <span className="campaign-risk">{campaign.healthScore}</span></p>
-                    </div>
->>>>>>> Stashed changes
 
                     {!!campaign.verification?.flaggedTerms?.length && (
                       <div className="campaign-chip-group">
@@ -768,14 +550,10 @@ function Campaigns() {
                       </div>
                     )}
 
-<<<<<<< Updated upstream
                     {!!campaign.verification?.issues?.length && (
-=======
-                    {!!campaign.generatedInsights?.length && (
->>>>>>> Stashed changes
                       <ul className="campaign-issues">
-                        {campaign.generatedInsights.map((issue, index) => (
-                          <li key={`${campaign._id}-insight-${index}`}>{issue}</li>
+                        {campaign.verification.issues.map((issue, index) => (
+                          <li key={`${campaign._id}-issue-${index}`}>{issue}</li>
                         ))}
                       </ul>
                     )}
