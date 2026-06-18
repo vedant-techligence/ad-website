@@ -1,4 +1,4 @@
-const Campaign = require("../models/Campaign");
+const Campaign = require("../models/Campaign.model");
 const AnalyticsSnapshot = require("../models/AnalyticsSnapshot");
 const Notification = require("../models/Notification");
 const Report = require("../models/Report");
@@ -149,7 +149,7 @@ const syncCampaignDerivedMetrics = async (campaignId) => {
   const healthScore = Number((totals.health / snapshots.length).toFixed(1));
   const sentimentScore = Number((totals.sentiment / snapshots.length).toFixed(1));
 
-  campaign.budget.spent = Number(totals.spend.toFixed(2));
+  campaign.estimatedCost = Number(totals.spend.toFixed(2));
   campaign.healthScore = healthScore;
   campaign.sentimentSummary = {
     positive: totals.positive,
@@ -188,33 +188,27 @@ const createDemoCampaigns = async (user) => {
       checksSummary: "Demo campaign approved with generated placeholder verification for dashboard bootstrapping.",
     };
 
+    const startDate = new Date(Date.now() - 1000 * 60 * 60 * 24 * (12 - index * 2));
+    const endDate = new Date(Date.now() + 1000 * 60 * 60 * 24 * (18 + index * 5));
+
     const campaign = await Campaign.create({
       owner: user._id,
       ...blueprint,
       destinationUrl: `https://techligence.in/demo/${index + 1}`,
       verification,
-      status: index === 2 ? "scheduled" : "active",
-      publicationStatus: "public",
+      status: "public",
       isPublic: true,
       publishedAt: new Date(),
-      budget: {
-        allocated: 12000 + index * 3500,
-        spent: 0,
-        currency: "USD",
-      },
-      schedule: {
-        startDate: new Date(Date.now() - 1000 * 60 * 60 * 24 * (12 - index * 2)),
-        endDate: new Date(Date.now() + 1000 * 60 * 60 * 24 * (18 + index * 5)),
-      },
+      startDate,
+      endDate,
+      dailyBudgetCap: 400 + index * 100,
+      repeatRate: 3,
+      estimatedCost: 12000 + index * 3500,
       targeting: {
-        audienceSegments: ["Commuters", "Shoppers", "Operators"].slice(0, 2 + (index % 2)),
-        regions: [blueprint.location.city, "NCR"],
-        devices: ["QR", "Touchscreen", "Voice"],
-      },
-      performanceGoals: {
-        impressions: 180000 + index * 30000,
-        conversions: 2800 + index * 450,
-        engagementRate: 7.2 + index * 0.6,
+        locations: [blueprint.location.city, "NCR"],
+        ageRange: { min: 18, max: 45 },
+        interests: ["Commuters", "Shoppers", "Operators"].slice(0, 2 + (index % 2)),
+        gender: "all",
       },
       sentimentSummary: {
         positive: 0,

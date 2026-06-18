@@ -15,6 +15,7 @@ import Analytics from "./pages/Analytics";
 import Reports from "./pages/Reports";
 import Notifications from "./pages/Notifications";
 import Geo from "./pages/Geo";
+import Profile from "./pages/Profile";
 
 function ScrollToTop() {
   const { pathname } = useLocation();
@@ -156,6 +157,14 @@ function AppRoutes() {
           element={(
             <ProtectedRoute>
               <Geo />
+            </ProtectedRoute>
+          )}
+        />
+        <Route
+          path="/profile"
+          element={(
+            <ProtectedRoute>
+              <Profile />
             </ProtectedRoute>
           )}
         />

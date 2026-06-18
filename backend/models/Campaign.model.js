@@ -133,7 +133,8 @@ const campaignSchema = new mongoose.Schema(
       default: [],
       validate: {
         validator: function (assets) {
-          return assets.some((a) => a.kind === "video");
+          if (this.isNew && !this.isPublic) return true;
+          return assets.length === 0 || assets.some((a) => a.kind === "video");
         },
         message: "At least one video file is required per campaign.",
       },
@@ -191,27 +192,17 @@ const campaignSchema = new mongoose.Schema(
     // ---- Lifecycle — expanded to include payment + verification states ----
     status: {
       type: String,
-<<<<<<< Updated upstream:backend/models/Campaign.model.js
       enum: [
-        "draft", // created, not yet submitted for payment
-        "pending_payment", // payment initiated, awaiting confirmation
-        "paid_pending_verification", // paid, waiting on content moderation
-        "public", // verified + live (kept friend's naming instead of "active")
-        "rejected", // failed verification
-        "completed", // ran its full duration
-        "cancelled", // advertiser cancelled
+        "draft",
+        "pending_payment",
+        "paid_pending_verification",
+        "public",
+        "rejected",
+        "completed",
+        "cancelled",
       ],
       default: "draft",
       index: true,
-=======
-      enum: ["draft", "scheduled", "active", "paused", "completed", "rejected", "public"],
-      default: "active",
-    },
-    publicationStatus: {
-      type: String,
-      enum: ["public", "blocked", "scheduled"],
-      default: "public",
->>>>>>> Stashed changes:backend/models/Campaign.js
     },
     isPublic: {
       type: Boolean,

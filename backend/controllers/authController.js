@@ -101,6 +101,20 @@ const completeOnboarding = asyncHandler(async (req, res) => {
   });
 });
 
+const updateProfile = asyncHandler(async (req, res) => {
+  const { name, businessName, industry, website, preferences } = req.body;
+
+  const user = await User.findByIdAndUpdate(
+    req.user.userId,
+    { name, businessName, industry, website, preferences },
+    { new: true, runValidators: true },
+  ).select("-password");
+
+  if (!user) throw new ApiError(404, "User not found.");
+
+  res.status(200).json({ message: "Profile updated.", user: serializeUser(user) });
+});
+
 const getProfile = asyncHandler(async (req, res) => {
   const user = await User.findById(req.user.userId).select("-password");
   if (!user) {
@@ -119,4 +133,5 @@ module.exports = {
   login,
   completeOnboarding,
   getProfile,
+  updateProfile,
 };

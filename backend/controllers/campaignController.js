@@ -1,7 +1,7 @@
 const mongoose = require("mongoose");
 const path = require("path");
 
-const Campaign = require("../models/Campaign");
+const Campaign = require("../models/Campaign.model");
 const AnalyticsSnapshot = require("../models/AnalyticsSnapshot");
 const { ApiError } = require("../utils/ApiError");
 const { asyncHandler } = require("../utils/asyncHandler");

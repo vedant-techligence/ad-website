@@ -54,9 +54,17 @@ function Navbar() {
         {/* Right actions */}
         <div className="navbar-actions">
           {isLoggedIn ? (
-            <button className="navbar-cta-button" onClick={handleLogout}>
-              LOGOUT
-            </button>
+            <>
+              <Link
+                to="/profile"
+                className={`navbar-link ${location.pathname === "/profile" ? "active" : ""}`}
+              >
+                PROFILE
+              </Link>
+              <button className="navbar-cta-button" onClick={handleLogout}>
+                LOGOUT
+              </button>
+            </>
           ) : (
             <>
               <Link

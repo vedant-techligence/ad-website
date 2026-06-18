@@ -1,4 +1,4 @@
-const Campaign = require("../models/Campaign");
+const Campaign = require("../models/Campaign.model");
 const AnalyticsSnapshot = require("../models/AnalyticsSnapshot");
 const Notification = require("../models/Notification");
 const Robot = require("../models/Robot");
