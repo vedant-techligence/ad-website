@@ -153,8 +153,11 @@ router.get("/:id", authMiddleware, async (req, res) => {
   }
 });
 
-const pricingConfig = require("../config/pricing");
+const { calculateCampaignEstimate } = require("../utils/campaignPricing");
 
+// Kept around for manually recomputing a draft's estimate later (e.g. if
+// config/pricing.js changes before payment). Nothing calls this automatically
+// anymore — the estimate is now computed once, at creation, in POST "/" below.
 router.post("/:id/estimate", authMiddleware, async (req, res) => {
   try {
     const campaign = await Campaign.findOne({
@@ -166,45 +169,27 @@ router.post("/:id/estimate", authMiddleware, async (req, res) => {
     }
 
     if (!campaign.startDate || !campaign.endDate || !campaign.repeatRate) {
-      return res
-        .status(400)
-        .json({
-          message: "Campaign is missing startDate, endDate, or repeatRate.",
-        });
+      return res.status(400).json({
+        message: "Campaign is missing startDate, endDate, or repeatRate.",
+      });
     }
 
-    const msPerDay = 1000 * 60 * 60 * 24;
-    const durationDays = Math.max(
-      1,
-      Math.ceil(
-        (new Date(campaign.endDate) - new Date(campaign.startDate)) / msPerDay,
-      ),
-    );
+    const { durationDays, breakdown, avgDailyCost, budgetWarning } =
+      calculateCampaignEstimate({
+        startDate: campaign.startDate,
+        endDate: campaign.endDate,
+        repeatRate: campaign.repeatRate,
+        dailyBudgetCap: campaign.dailyBudgetCap,
+      });
 
-    const { BASE_RATE_PER_REPEAT_PER_DAY, PLATFORM_FEE_PERCENT, GST_PERCENT } =
-      pricingConfig;
-
-    const baseCost =
-      durationDays * campaign.repeatRate * BASE_RATE_PER_REPEAT_PER_DAY;
-    const platformFee = (baseCost * PLATFORM_FEE_PERCENT) / 100;
-    const subtotal = baseCost + platformFee;
-    const gst = (subtotal * GST_PERCENT) / 100;
-    const estimatedCost = Math.round(subtotal + gst);
-
-    const avgDailyCost = Math.round((estimatedCost / durationDays) * 100) / 100;
-    let budgetWarning = null;
-    if (campaign.dailyBudgetCap && avgDailyCost > campaign.dailyBudgetCap) {
-      budgetWarning = `Estimated average daily cost (₹${avgDailyCost}) exceeds your dailyBudgetCap (₹${campaign.dailyBudgetCap}).`;
-    }
-
-    campaign.estimatedCost = estimatedCost;
+    campaign.estimatedCost = breakdown.estimatedCost;
     await campaign.save();
 
     return res.status(200).json({
       campaignId: campaign._id,
       durationDays,
       repeatRate: campaign.repeatRate,
-      breakdown: { baseCost, platformFee, gst, estimatedCost },
+      breakdown,
       avgDailyCost,
       dailyBudgetCap: campaign.dailyBudgetCap,
       budgetWarning,
@@ -289,6 +274,14 @@ router.post("/", authMiddleware, uploadCampaignFiles, async (req, res) => {
       slideText: sanitizeText(slideText),
     };
 
+    const { breakdown } = calculateCampaignEstimate({
+      
+      startDate,
+      endDate,
+      repeatRate: Number(repeatRate),
+      dailyBudgetCap: Number(dailyBudgetCap),
+    });
+    console.log("Computed breakdown:", breakdown);
     const campaign = await Campaign.create({
       owner: req.user.userId,
       ...payload,
@@ -306,9 +299,10 @@ router.post("/", authMiddleware, uploadCampaignFiles, async (req, res) => {
       endDate,
       repeatRate: Number(repeatRate),
       dailyBudgetCap: Number(dailyBudgetCap),
+      estimatedCost: breakdown.estimatedCost,
       // No verification yet, no payment yet — campaign starts as a draft.
-      // It moves to paid_pending_verification once payment succeeds (separate route),
-      // then to public/rejected once the verification service reviews it.
+      // estimatedCost is locked in right now since nothing about the
+      // schedule, repeatRate, or budget can be edited after creation.
       status: "draft",
       isPublic: false,
       publishedAt: null,

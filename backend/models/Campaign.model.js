@@ -31,6 +31,15 @@ const mediaAssetSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
+    source: {
+      type: String,
+      enum: ["upload", "google_drive", "youtube"],
+      default: "upload",
+    },
+    sourceUrl: {
+      type: String, // original link, if imported rather than directly uploaded
+      default: null,
+    },
   },
   { _id: false },
 );
@@ -39,7 +48,7 @@ const verificationSchema = new mongoose.Schema(
   {
     status: {
       type: String,
-      enum: ["pending", "approved", "rejected"], // "pending" added — campaign may not be checked yet
+      enum: ["pending", "approved", "rejected"],
       default: "pending",
     },
     riskLevel: {
@@ -78,7 +87,7 @@ const campaignSchema = new mongoose.Schema(
       required: true,
     },
 
-    // ---- Ad content (friend's fields — what the ad says / where it physically shows) ----
+    // ---- Ad content (what the ad says / where it physically shows) ----
     title: {
       type: String,
       required: true,
@@ -130,7 +139,7 @@ const campaignSchema = new mongoose.Schema(
       },
     },
 
-    // ---- Targeting (your fields — who sees the ad) ----
+    // ---- Targeting ( who sees the ad) ----
     targeting: {
       locations: [{ type: String }],
       ageRange: {
@@ -145,7 +154,7 @@ const campaignSchema = new mongoose.Schema(
       },
     },
 
-    // ---- Schedule & frequency (your fields — how long / how often) ----
+    // ---- Schedule & frequency (  how long / how often) ----
     startDate: {
       type: Date,
       required: true,
@@ -167,13 +176,13 @@ const campaignSchema = new mongoose.Schema(
       min: 0,
     },
 
-    // ---- Pricing (your fields) ----
+    // ---- Pricing  ----
     estimatedCost: {
       type: Number,
       default: 0,
     },
 
-    // ---- Verification (friend's, now optional/pending-aware) ----
+    // ---- Verification (now optional/pending-aware) ----
     verification: {
       type: verificationSchema,
       default: () => ({}),
@@ -213,7 +222,6 @@ campaignSchema.pre("validate", function (next) {
   if (this.startDate && this.endDate && this.endDate <= this.startDate) {
     return next(new Error("endDate must be after startDate"));
   }
-  
 });
 
 module.exports = mongoose.model("Campaign", campaignSchema);
