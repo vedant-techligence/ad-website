@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
+import { useAuth } from "../context/useAuth";
 import API from "../api/axios";
 import "./Signup.css";
 
@@ -8,6 +9,8 @@ function Signup() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+  const { login } = useAuth();
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
@@ -18,18 +21,20 @@ function Signup() {
       setError("All fields are required.");
       return;
     }
-    if (password.length < 6) {
-      setError("Password must be at least 6 characters.");
+    if (password.length < 8) {
+      setError("Password must be at least 8 characters.");
       return;
     }
 
     try {
+      setLoading(true);
       await API.post("/auth/register", { name, email, password });
-      const loginRes = await API.post("/auth/login", { email, password });
-      localStorage.setItem("token", loginRes.data.token);
+      await login(email, password);
       navigate("/onboarding");
     } catch (err) {
       setError(err.response?.data?.message || "Something went wrong.");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -61,8 +66,8 @@ function Signup() {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
           />
-          <button className="signup-button" type="submit">
-            Create Account
+          <button className="signup-button" type="submit" disabled={loading}>
+            {loading ? "Creating account..." : "Create Account"}
           </button>
         </form>
         <p className="signup-footer">

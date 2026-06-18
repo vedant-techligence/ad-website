@@ -1,0 +1,100 @@
+.admin-dashboard {
+  min-height: 100vh;
+  background-color: var(--bg-primary);
+  padding: 2rem;
+  font-family: var(--font-body);
+}
+
+.admin-dashboard__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2.5rem;
+  padding-bottom: 1.25rem;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.admin-dashboard__title {
+  font-family: var(--font-heading);
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: var(--accent-cyan);
+  letter-spacing: 0.05em;
+  margin-bottom: 0.25rem;
+}
+
+.admin-dashboard__role {
+  font-size: 0.95rem;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.admin-dashboard__logout {
+  padding: 0.5rem 1.4rem;
+  background: transparent;
+  color: var(--accent-cyan);
+  border: 1px solid var(--border-accent);
+  border-radius: 6px;
+  font-family: var(--font-heading);
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+  transition:
+    background 0.2s ease,
+    color 0.2s ease;
+}
+
+.admin-dashboard__logout:hover {
+  background: var(--accent-cyan);
+  color: #fff;
+}
+
+.admin-dashboard__status {
+  font-size: 1rem;
+  color: var(--text-muted);
+  margin-top: 1rem;
+}
+
+.admin-dashboard__error {
+  font-size: 1rem;
+  color: #e53e3e;
+  margin-top: 1rem;
+}
+
+.admin-dashboard__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1.25rem;
+}
+
+.admin-dashboard__card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 1.5rem;
+  transition:
+    box-shadow 0.2s ease,
+    border-color 0.2s ease;
+}
+
+.admin-dashboard__card:hover {
+  background: var(--bg-card-hover);
+  border-color: var(--border-accent);
+  box-shadow: 0 0 12px var(--accent-glow);
+}
+
+.admin-dashboard__card-label {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 0.6rem;
+  font-weight: 600;
+}
+
+.admin-dashboard__card-value {
+  font-family: var(--font-heading);
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import API, { API_ORIGIN } from "../api/axios";
+import { useAuth } from "../context/useAuth";
 import "./Campaigns.css";
 
 const INITIAL_FORM = {
@@ -39,6 +40,8 @@ const dateFormatter = new Intl.DateTimeFormat("en-IN", {
 function Campaigns() {
   const navigate = useNavigate();
   const fileInputRef = useRef(null);
+  const { user, loading: authLoading } = useAuth();
+
   const [form, setForm] = useState(INITIAL_FORM);
   const [files, setFiles] = useState([]);
   const [campaigns, setCampaigns] = useState([]);
@@ -49,33 +52,29 @@ function Campaigns() {
   const [feedbackTone, setFeedbackTone] = useState("success");
   const [resultModal, setResultModal] = useState(null);
 
-  // ---- Google Drive video import state ----
   const [driveUrl, setDriveUrl] = useState("");
   const [importingDrive, setImportingDrive] = useState(false);
   const [driveError, setDriveError] = useState("");
-  const [importedAssets, setImportedAssets] = useState([]); // assets pulled in from Drive, held until form submit
+  const [importedAssets, setImportedAssets] = useState([]);
 
   useEffect(() => {
-    const token = localStorage.getItem("token");
+    // wait until AuthContext has finished trying to restore the session
+    if (authLoading) return;
 
-    if (!token) {
+    if (!user) {
       navigate("/login");
       return;
     }
 
     const loadCampaigns = async () => {
       try {
-        const response = await API.get("/campaigns", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        const response = await API.get("/campaigns");
         setCampaigns(response.data);
       } catch (requestError) {
         if (requestError.response?.status === 401) {
-          localStorage.removeItem("token");
           navigate("/login");
           return;
         }
-
         setError("Unable to load campaigns right now.");
       } finally {
         setLoading(false);
@@ -83,7 +82,7 @@ function Campaigns() {
     };
 
     loadCampaigns();
-  }, [navigate]);
+  }, [authLoading, user, navigate]);
 
   const handleChange = (event) => {
     const { name, value } = event.target;
@@ -102,7 +101,6 @@ function Campaigns() {
     setResultModal(null);
   };
 
-  // ---- Google Drive import handler ----
   const handleImportFromDrive = async () => {
     setDriveError("");
 
@@ -111,8 +109,7 @@ function Campaigns() {
       return;
     }
 
-    const token = localStorage.getItem("token");
-    if (!token) {
+    if (!user) {
       navigate("/login");
       return;
     }
@@ -120,17 +117,14 @@ function Campaigns() {
     setImportingDrive(true);
 
     try {
-      const response = await API.post(
-        "/campaigns/import-drive-video",
-        { driveUrl: driveUrl.trim() },
-        { headers: { Authorization: `Bearer ${token}` } },
-      );
+      const response = await API.post("/campaigns/import-drive-video", {
+        driveUrl: driveUrl.trim(),
+      });
 
       setImportedAssets((current) => [...current, response.data.mediaAsset]);
       setDriveUrl("");
     } catch (requestError) {
       if (requestError.response?.status === 401) {
-        localStorage.removeItem("token");
         navigate("/login");
         return;
       }
@@ -157,7 +151,6 @@ function Campaigns() {
     setFeedbackTone("success");
     closeResultModal();
 
-    // at least one media source — direct upload OR a Drive import — is required
     if (!files.length && !importedAssets.length) {
       const message =
         "Upload at least one image or video, or import one from Google Drive.";
@@ -204,8 +197,7 @@ function Campaigns() {
       return;
     }
 
-    const token = localStorage.getItem("token");
-    if (!token) {
+    if (!user) {
       navigate("/login");
       return;
     }
@@ -214,8 +206,6 @@ function Campaigns() {
     Object.entries(form).forEach(([key, value]) => formData.append(key, value));
     files.forEach((file) => formData.append("mediaFiles", file));
 
-    // pass along any Drive-imported assets as a JSON string —
-    // the backend parses this and merges it with directly-uploaded files
     if (importedAssets.length) {
       formData.append("importedMediaAssets", JSON.stringify(importedAssets));
     }
@@ -223,11 +213,7 @@ function Campaigns() {
     setSubmitting(true);
 
     try {
-      const response = await API.post("/campaigns", formData, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      const response = await API.post("/campaigns", formData);
 
       setCampaigns((current) => [response.data, ...current]);
       setForm(INITIAL_FORM);
@@ -251,7 +237,6 @@ function Campaigns() {
       });
     } catch (requestError) {
       if (requestError.response?.status === 401) {
-        localStorage.removeItem("token");
         navigate("/login");
         return;
       }
@@ -274,14 +259,12 @@ function Campaigns() {
   const resolveMediaUrl = (publicUrl) =>
     publicUrl?.startsWith("http") ? publicUrl : `${API_ORIGIN}${publicUrl}`;
 
-  const publicCampaigns = campaigns.filter(
-    (campaign) => campaign.isPublic,
-  ).length;
+  const publicCampaigns = campaigns.filter((c) => c.isPublic).length;
   const blockedCampaigns = campaigns.filter(
-    (campaign) => campaign.status === "rejected",
+    (c) => c.status === "rejected",
   ).length;
   const totalAssets = campaigns.reduce(
-    (count, campaign) => count + (campaign.mediaAssets?.length || 0),
+    (count, c) => count + (c.mediaAssets?.length || 0),
     0,
   );
 

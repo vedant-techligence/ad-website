@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import API from "../api/axios";
+import { useAuth } from "../context/useAuth";
 import "./Billing.css";
 
 const STATUS_LABELS = {
@@ -13,9 +14,6 @@ const STATUS_LABELS = {
   cancelled: "Cancelled",
 };
 
-// Estimated cost is now locked in once, at creation (see campaign.routes.js) —
-// nothing about a draft's schedule, repeatRate, or budget can change afterward,
-// so there's no reason to recompute it here. We just display what's stored.
 const BILLABLE_STATUSES = new Set(["draft", "pending_payment"]);
 
 const currencyFormatter = new Intl.NumberFormat("en-IN", {
@@ -28,32 +26,28 @@ const formatDate = (isoString) => (isoString ? isoString.slice(0, 10) : "—");
 
 function Billing() {
   const navigate = useNavigate();
+  const { user, loading: authLoading } = useAuth();
   const [campaigns, setCampaigns] = useState([]);
   const [loading, setLoading] = useState(true);
   const [pageError, setPageError] = useState("");
 
   useEffect(() => {
-    const token = localStorage.getItem("token");
+    if (authLoading) return;
 
-    if (!token) {
+    if (!user) {
       navigate("/login");
       return;
     }
 
     const loadCampaigns = async () => {
       try {
-        const response = await API.get("/campaigns", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-
+        const response = await API.get("/campaigns");
         setCampaigns(response.data);
       } catch (requestError) {
         if (requestError.response?.status === 401) {
-          localStorage.removeItem("token");
           navigate("/login");
           return;
         }
-
         setPageError("Unable to load campaigns right now.");
       } finally {
         setLoading(false);
@@ -61,7 +55,7 @@ function Billing() {
     };
 
     loadCampaigns();
-  }, [navigate]);
+  }, [authLoading, user, navigate]);
 
   const handleProceedToPayment = () => {
     // Razorpay checkout isn't built yet — this is wired up but intentionally

@@ -4,7 +4,7 @@ const path = require("path");
 const express = require("express");
 const multer = require("multer");
 const Campaign = require("../models/Campaign.model");
-const { authMiddleware } = require("../middleware/auth");
+const { authMiddleware, requireRole } = require("../middleware/auth");
 // NOTE: verifyCampaign is intentionally NOT called during creation anymore.
 // Verification now happens after payment, as a separate step (handled by the
 // verification teammate's service / an internal endpoint). Keeping the import
@@ -111,6 +111,35 @@ const toArray = (val) => {
     .map((s) => s.trim())
     .filter(Boolean);
 };
+
+router.get(
+  "/admin/stats",
+  authMiddleware,
+  requireRole("admin"),
+  async (_req, res) => {
+    try {
+      const [total, active, pending, revenueResult] = await Promise.all([
+        Campaign.countDocuments(),
+        Campaign.countDocuments({ status: "public" }),
+        Campaign.countDocuments({ status: "paid_pending_verification" }),
+        Campaign.aggregate([
+          { $match: { status: { $in: ["public", "completed"] } } },
+          { $group: { _id: null, total: { $sum: "$estimatedCost" } } },
+        ]),
+      ]);
+
+      res.status(200).json({
+        totalCampaigns: total,
+        activeCampaigns: active,
+        pendingApprovals: pending,
+        revenueGenerated: revenueResult[0]?.total || 0,
+        activeRobots: null,
+      });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch admin stats." });
+    }
+  },
+);
 
 router.get("/public", async (_req, res) => {
   try {
@@ -275,7 +304,6 @@ router.post("/", authMiddleware, uploadCampaignFiles, async (req, res) => {
     };
 
     const { breakdown } = calculateCampaignEstimate({
-      
       startDate,
       endDate,
       repeatRate: Number(repeatRate),
