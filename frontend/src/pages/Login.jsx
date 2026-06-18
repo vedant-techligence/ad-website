@@ -1,34 +1,32 @@
 import { useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
-import API from "../api/axios";
+import { Link, useNavigate } from "react-router-dom";
+import toast from "react-hot-toast";
+import api from "../api/axios";
+import { useAuth } from "../context/AuthContext";
 import "./Login.css";
 
 function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [submitting, setSubmitting] = useState(false);
   const navigate = useNavigate();
+  const { setSession } = useAuth();
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const handleSubmit = async (event) => {
+    event.preventDefault();
     setError("");
-
-    if (!email || !password) {
-      setError("All fields are required.");
-      return;
-    }
+    setSubmitting(true);
 
     try {
-      const res = await API.post("/auth/login", { email, password });
-      const { token, isProfileComplete } = res.data;
-      localStorage.setItem("token", token);
-      if (isProfileComplete) {
-        navigate("/dashboard");
-      } else {
-        navigate("/onboarding");
-      }
-    } catch (err) {
-      setError(err.response?.data?.message || "Something went wrong.");
+      const response = await api.post("/auth/login", { email, password });
+      setSession(response.data.token, response.data.user);
+      toast.success("Signed in successfully.");
+      navigate(response.data.user.isProfileComplete ? "/dashboard" : "/onboarding");
+    } catch (requestError) {
+      setError(requestError.response?.data?.message || "Something went wrong.");
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -44,17 +42,19 @@ function Login() {
             type="email"
             placeholder="Email"
             value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            onChange={(event) => setEmail(event.target.value)}
+            required
           />
           <input
             className="login-input"
             type="password"
             placeholder="Password"
             value={password}
-            onChange={(e) => setPassword(e.target.value)}
+            onChange={(event) => setPassword(event.target.value)}
+            required
           />
-          <button className="login-button" type="submit">
-            Sign In
+          <button className="login-button" type="submit" disabled={submitting}>
+            {submitting ? "Signing In..." : "Sign In"}
           </button>
         </form>
         <p className="login-footer">

@@ -1,6 +1,8 @@
 import { useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
-import API from "../api/axios";
+import { Link, useNavigate } from "react-router-dom";
+import toast from "react-hot-toast";
+import api from "../api/axios";
+import { useAuth } from "../context/AuthContext";
 import "./Signup.css";
 
 function Signup() {
@@ -8,28 +10,24 @@ function Signup() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [submitting, setSubmitting] = useState(false);
   const navigate = useNavigate();
+  const { setSession } = useAuth();
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const handleSubmit = async (event) => {
+    event.preventDefault();
     setError("");
-
-    if (!name || !email || !password) {
-      setError("All fields are required.");
-      return;
-    }
-    if (password.length < 6) {
-      setError("Password must be at least 6 characters.");
-      return;
-    }
+    setSubmitting(true);
 
     try {
-      await API.post("/auth/register", { name, email, password });
-      const loginRes = await API.post("/auth/login", { email, password });
-      localStorage.setItem("token", loginRes.data.token);
+      const response = await api.post("/auth/register", { name, email, password });
+      setSession(response.data.token, response.data.user);
+      toast.success("Account created.");
       navigate("/onboarding");
-    } catch (err) {
-      setError(err.response?.data?.message || "Something went wrong.");
+    } catch (requestError) {
+      setError(requestError.response?.data?.message || "Something went wrong.");
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -45,24 +43,27 @@ function Signup() {
             type="text"
             placeholder="Name"
             value={name}
-            onChange={(e) => setName(e.target.value)}
+            onChange={(event) => setName(event.target.value)}
+            required
           />
           <input
             className="signup-input"
             type="email"
             placeholder="Email"
             value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            onChange={(event) => setEmail(event.target.value)}
+            required
           />
           <input
             className="signup-input"
             type="password"
             placeholder="Password"
             value={password}
-            onChange={(e) => setPassword(e.target.value)}
+            onChange={(event) => setPassword(event.target.value)}
+            required
           />
-          <button className="signup-button" type="submit">
-            Create Account
+          <button className="signup-button" type="submit" disabled={submitting}>
+            {submitting ? "Creating..." : "Create Account"}
           </button>
         </form>
         <p className="signup-footer">

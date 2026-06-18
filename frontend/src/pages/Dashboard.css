@@ -16,27 +16,62 @@
   text-align: center;
 }
 
-.dashboard-card h2 {
+.dashboard-card h2,
+.dashboard-hero-card h1,
+.dashboard-panel h2,
+.dashboard-shortcut-card h3,
+.dashboard-top-card h3 {
   font-family: var(--font-heading);
-  font-size: 1.6rem;
-  color: var(--accent-cyan);
-  letter-spacing: 2px;
+}
+
+.dashboard-page {
+  min-height: calc(100vh - 160px);
+  padding: 2rem 1.5rem 3rem;
+  background:
+    radial-gradient(circle at top left, rgba(0, 168, 204, 0.16), transparent 28%),
+    radial-gradient(circle at 85% 12%, rgba(0, 85, 204, 0.12), transparent 18%),
+    linear-gradient(180deg, #edf8ff 0%, #dfeefa 100%);
+}
+
+.dashboard-hero-card,
+.dashboard-panel {
+  padding: 1.8rem;
+}
+
+.dashboard-eyebrow {
+  font-family: var(--font-heading);
+  color: var(--accent-blue);
+  letter-spacing: 0.18em;
   text-transform: uppercase;
-  margin-bottom: 0.5rem;
+  font-size: 0.75rem;
 }
 
-.dashboard-card p {
+.dashboard-hero-card h1 {
+  margin-top: 0.7rem;
+  color: var(--text-primary);
+  font-size: clamp(1.8rem, 3vw, 2.8rem);
+  line-height: 1.08;
+  max-width: 12ch;
+}
+
+.dashboard-hero-copy {
+  margin-top: 0.9rem;
+  max-width: 58ch;
   color: var(--text-secondary);
-  font-size: 0.95rem;
+  font-size: 1.02rem;
 }
 
-.dashboard-copy {
-  margin-top: 0.75rem;
+.dashboard-hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.8rem;
+  margin-top: 1.3rem;
 }
 
 .dashboard-link {
   display: inline-flex;
-  margin-top: 1.25rem;
+  align-items: center;
+  justify-content: center;
   padding: 0.85rem 1.1rem;
   border-radius: 14px;
   background: linear-gradient(135deg, var(--accent-cyan), var(--accent-blue));
@@ -49,4 +84,128 @@
 
 .dashboard-link:hover {
   color: #fff;
+}
+
+.dashboard-link-secondary {
+  background: rgba(255, 255, 255, 0.72);
+  color: var(--accent-blue);
+  border: 1px solid rgba(0, 85, 204, 0.18);
+}
+
+.dashboard-link-secondary:hover {
+  color: var(--accent-blue);
+}
+
+.dashboard-metrics {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1rem;
+  margin-top: 1.4rem;
+}
+
+.dashboard-metric-card {
+  padding: 1.1rem 1.2rem;
+  border-radius: 22px;
+  border: 1px solid rgba(0, 85, 204, 0.12);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.88), rgba(242, 250, 255, 0.98));
+  box-shadow: 0 14px 24px rgba(0, 85, 204, 0.08);
+}
+
+.dashboard-metric-card span {
+  display: block;
+  font-family: var(--font-heading);
+  font-size: 1.5rem;
+  color: var(--accent-blue);
+  line-height: 1;
+}
+
+.dashboard-metric-card p {
+  margin-top: 0.45rem;
+  color: var(--text-secondary);
+}
+
+.dashboard-metric-card small {
+  display: block;
+  margin-top: 0.25rem;
+  color: var(--text-muted);
+  font-size: 0.92rem;
+}
+
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: 1.1fr 0.9fr;
+  gap: 1.4rem;
+  margin-top: 1.5rem;
+}
+
+.dashboard-shortcuts,
+.dashboard-top-list {
+  display: grid;
+  gap: 0.95rem;
+  margin-top: 1rem;
+}
+
+.dashboard-shortcuts {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.dashboard-shortcut-card,
+.dashboard-top-card {
+  padding: 1rem 1.05rem;
+  border-radius: 22px;
+  border: 1px solid rgba(0, 85, 204, 0.1);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.88), rgba(244, 251, 255, 0.98));
+}
+
+.dashboard-shortcut-card h3,
+.dashboard-top-card h3 {
+  color: var(--text-primary);
+  font-size: 0.95rem;
+}
+
+.dashboard-shortcut-card p,
+.dashboard-top-card p,
+.dashboard-panel {
+  color: var(--text-secondary);
+}
+
+.dashboard-top-card {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: flex-start;
+}
+
+.dashboard-top-meta {
+  display: grid;
+  gap: 0.35rem;
+  color: var(--accent-blue);
+  font-family: var(--font-heading);
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+@media (max-width: 920px) {
+  .dashboard-metrics,
+  .dashboard-grid,
+  .dashboard-shortcuts {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 680px) {
+  .dashboard-page {
+    padding: 1.25rem 1rem 2rem;
+  }
+
+  .dashboard-metrics,
+  .dashboard-grid,
+  .dashboard-shortcuts {
+    grid-template-columns: 1fr;
+  }
+
+  .dashboard-top-card {
+    flex-direction: column;
+  }
 }

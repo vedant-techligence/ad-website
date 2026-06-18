@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import API, { API_ORIGIN } from "../api/axios";
+import toast from "react-hot-toast";
+import api, { API_ORIGIN } from "../api/axios";
 import "./Campaigns.css";
 
 const INITIAL_FORM = {
@@ -37,17 +37,21 @@ const dateFormatter = new Intl.DateTimeFormat("en-IN", {
 });
 
 function Campaigns() {
-  const navigate = useNavigate();
   const fileInputRef = useRef(null);
   const [form, setForm] = useState(INITIAL_FORM);
   const [files, setFiles] = useState([]);
   const [campaigns, setCampaigns] = useState([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [editingId, setEditingId] = useState("");
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
-  const [feedbackTone, setFeedbackTone] = useState("success");
-  const [resultModal, setResultModal] = useState(null);
+
+  const loadCampaigns = async () => {
+    const response = await api.get("/campaigns", { params: { limit: 20 } });
+    setCampaigns(response.data.items);
+    setLoading(false);
+  };
 
   // ---- Google Drive video import state ----
   const [driveUrl, setDriveUrl] = useState("");
@@ -56,34 +60,21 @@ function Campaigns() {
   const [importedAssets, setImportedAssets] = useState([]); // assets pulled in from Drive, held until form submit
 
   useEffect(() => {
-    const token = localStorage.getItem("token");
+    let active = true;
 
-    if (!token) {
-      navigate("/login");
-      return;
-    }
-
-    const loadCampaigns = async () => {
-      try {
-        const response = await API.get("/campaigns", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        setCampaigns(response.data);
-      } catch (requestError) {
-        if (requestError.response?.status === 401) {
-          localStorage.removeItem("token");
-          navigate("/login");
-          return;
-        }
-
-        setError("Unable to load campaigns right now.");
-      } finally {
-        setLoading(false);
+    void api.get("/campaigns", { params: { limit: 20 } }).then((response) => {
+      if (!active) {
+        return;
       }
-    };
 
-    loadCampaigns();
-  }, [navigate]);
+      setCampaigns(response.data.items);
+      setLoading(false);
+    });
+
+    return () => {
+      active = false;
+    };
+  }, []);
 
   const handleChange = (event) => {
     const { name, value } = event.target;
@@ -94,12 +85,49 @@ function Campaigns() {
     setFiles(Array.from(event.target.files || []));
   };
 
-  const openResultModal = (payload) => {
-    setResultModal(payload);
+  const resetForm = ({ clearFeedback = true } = {}) => {
+    setForm(INITIAL_FORM);
+    setFiles([]);
+    setEditingId("");
+    if (clearFeedback) {
+      setError("");
+      setSuccess("");
+    }
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
   };
 
-  const closeResultModal = () => {
-    setResultModal(null);
+  const handleEdit = (campaign) => {
+    setEditingId(campaign._id);
+    setForm({
+      title: campaign.title || "",
+      brandName: campaign.brandName || "",
+      robotPlacement: campaign.robotPlacement || "",
+      destinationUrl: campaign.destinationUrl || "",
+      description: campaign.description || "",
+      callToAction: campaign.callToAction || "",
+      spokenWords: campaign.spokenWords || "",
+      slideText: campaign.slideText || "",
+    });
+    setFiles([]);
+    setError("");
+    setSuccess("");
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const handleDelete = async (campaignId) => {
+    const confirmed = window.confirm("Delete this campaign?");
+    if (!confirmed) {
+      return;
+    }
+
+    await api.delete(`/campaigns/${campaignId}`);
+    toast.success("Campaign deleted.");
+    if (editingId === campaignId) {
+      resetForm();
+    }
+    await loadCampaigns();
   };
 
   // ---- Google Drive import handler ----
@@ -154,6 +182,7 @@ function Campaigns() {
     event.preventDefault();
     setError("");
     setSuccess("");
+<<<<<<< Updated upstream
     setFeedbackTone("success");
     closeResultModal();
 
@@ -209,11 +238,15 @@ function Campaigns() {
       navigate("/login");
       return;
     }
+=======
+    setSubmitting(true);
+>>>>>>> Stashed changes
 
     const formData = new FormData();
     Object.entries(form).forEach(([key, value]) => formData.append(key, value));
     files.forEach((file) => formData.append("mediaFiles", file));
 
+<<<<<<< Updated upstream
     // pass along any Drive-imported assets as a JSON string —
     // the backend parses this and merges it with directly-uploaded files
     if (importedAssets.length) {
@@ -266,6 +299,22 @@ function Campaigns() {
         message,
         details: [],
       });
+=======
+    try {
+      if (editingId) {
+        await api.patch(`/campaigns/${editingId}`, formData);
+        resetForm({ clearFeedback: false });
+        setSuccess("Campaign updated successfully.");
+      } else {
+        await api.post("/campaigns", formData);
+        resetForm({ clearFeedback: false });
+        setSuccess("Campaign submitted successfully.");
+      }
+
+      await loadCampaigns();
+    } catch (requestError) {
+      setError(requestError.response?.data?.message || "Failed to save campaign.");
+>>>>>>> Stashed changes
     } finally {
       setSubmitting(false);
     }
@@ -274,12 +323,17 @@ function Campaigns() {
   const resolveMediaUrl = (publicUrl) =>
     publicUrl?.startsWith("http") ? publicUrl : `${API_ORIGIN}${publicUrl}`;
 
+<<<<<<< Updated upstream
   const publicCampaigns = campaigns.filter(
     (campaign) => campaign.isPublic,
   ).length;
   const blockedCampaigns = campaigns.filter(
     (campaign) => campaign.status === "rejected",
   ).length;
+=======
+  const publicCampaigns = campaigns.filter((campaign) => campaign.isPublic).length;
+  const blockedCampaigns = campaigns.filter((campaign) => campaign.publicationStatus === "blocked").length;
+>>>>>>> Stashed changes
   const totalAssets = campaigns.reduce(
     (count, campaign) => count + (campaign.mediaAssets?.length || 0),
     0,
@@ -287,6 +341,7 @@ function Campaigns() {
 
   return (
     <div className="campaigns-page">
+<<<<<<< Updated upstream
       {resultModal && (
         <div className="campaigns-modal-backdrop" onClick={closeResultModal}>
           <div
@@ -330,14 +385,21 @@ function Campaigns() {
         </div>
       )}
 
+=======
+>>>>>>> Stashed changes
       <section className="campaigns-hero">
         <div className="campaigns-hero-copy-block">
-          <p className="campaigns-eyebrow">Ad Verification Control</p>
-          <h1>Create Robot-Safe Campaigns</h1>
+          <p className="campaigns-eyebrow">Campaign Management</p>
+          <h1>Create and manage robot campaigns</h1>
           <p className="campaigns-hero-copy">
+<<<<<<< Updated upstream
             Submit the campaign copy, schedule, spoken words, slide text, and
             creative files. Campaigns save as drafts, then move to payment and
             verification before going live on robot displays.
+=======
+            Keep your original campaign workflow, while now supporting update, delete,
+            reporting, analytics, health scoring, and geo tracking behind the scenes.
+>>>>>>> Stashed changes
           </p>
           <div className="campaigns-stat-row">
             <div className="campaigns-stat-card">
@@ -346,22 +408,28 @@ function Campaigns() {
             </div>
             <div className="campaigns-stat-card">
               <span>{blockedCampaigns}</span>
-              <p>Blocked by policy</p>
+              <p>Blocked campaigns</p>
             </div>
             <div className="campaigns-stat-card">
               <span>{totalAssets}</span>
-              <p>Media files reviewed</p>
+              <p>Media files tracked</p>
             </div>
           </div>
         </div>
         <div className="campaigns-hero-panel">
-          <h2>What gets checked</h2>
+          <h2>What is included now</h2>
           <ul>
+<<<<<<< Updated upstream
             <li>
               Campaign title, description, CTA, transcript, and slide text
             </li>
             <li>All uploaded file names, formats, and size limits</li>
             <li>Risky or inappropriate words before robot display goes live</li>
+=======
+            <li>CRUD campaign management with policy verification and health scoring</li>
+            <li>Analytics, reports, notifications, and geo pages linked from the main nav</li>
+            <li>Mock AI-ready backend endpoints for future media intelligence integrations</li>
+>>>>>>> Stashed changes
           </ul>
         </div>
       </section>
@@ -370,24 +438,23 @@ function Campaigns() {
         <form className="campaigns-form-card" onSubmit={handleSubmit}>
           <div className="campaigns-form-header">
             <div>
+<<<<<<< Updated upstream
               <p className="campaigns-section-label">New Campaign</p>
               <h2>Create campaign draft</h2>
+=======
+              <p className="campaigns-section-label">{editingId ? "Edit Campaign" : "New Campaign"}</p>
+              <h2>{editingId ? "Update campaign" : "Upload and verify"}</h2>
+>>>>>>> Stashed changes
             </div>
-            <Link className="campaigns-dashboard-link" to="/dashboard">
-              Back to dashboard
-            </Link>
+            {editingId ? (
+              <button className="campaigns-dashboard-link" type="button" onClick={resetForm}>
+                Cancel edit
+              </button>
+            ) : null}
           </div>
 
           {(error || success) && (
-            <p
-              className={`campaigns-message ${
-                error
-                  ? "campaigns-error"
-                  : feedbackTone === "warning"
-                    ? "campaigns-warning"
-                    : "campaigns-success"
-              }`}
-            >
+            <p className={`campaigns-message ${error ? "campaigns-error" : "campaigns-success"}`}>
               {error || success}
             </p>
           )}
@@ -403,7 +470,6 @@ function Campaigns() {
                 required
               />
             </label>
-
             <label>
               Brand name
               <input
@@ -414,7 +480,6 @@ function Campaigns() {
                 required
               />
             </label>
-
             <label>
               Robot placement
               <input
@@ -425,7 +490,6 @@ function Campaigns() {
                 required
               />
             </label>
-
             <label>
               Destination URL
               <input
@@ -516,7 +580,6 @@ function Campaigns() {
               onChange={handleChange}
               placeholder="Paste the voiceover or spoken words used in the video."
               rows="4"
-              required
             />
           </label>
 
@@ -526,9 +589,8 @@ function Campaigns() {
               name="slideText"
               value={form.slideText}
               onChange={handleChange}
-              placeholder="List the slide text, subtitles, overlays, or text visible in the creative."
+              placeholder="List the slide text, subtitles, overlays, or visible text."
               rows="4"
-              required
             />
           </label>
 
@@ -542,7 +604,7 @@ function Campaigns() {
               onChange={handleFileChange}
             />
             <span>
-              Up to 6 image/video files. Images max 10 MB. Videos max 80 MB.
+              Optional on edit. Upload up to 6 image/video files.
             </span>
           </label>
 
@@ -554,6 +616,7 @@ function Campaigns() {
             </div>
           )}
 
+<<<<<<< Updated upstream
           {/* ---- Google Drive video import section ---- */}
           <div className="campaigns-drive-import">
             <p className="campaigns-section-label">
@@ -608,6 +671,16 @@ function Campaigns() {
             disabled={submitting}
           >
             {submitting ? "Saving campaign..." : "Save as draft"}
+=======
+          <button className="campaigns-submit" type="submit" disabled={submitting}>
+            {submitting
+              ? editingId
+                ? "Updating campaign..."
+                : "Verifying campaign..."
+              : editingId
+                ? "Update campaign"
+                : "Verify and publish"}
+>>>>>>> Stashed changes
           </button>
         </form>
 
@@ -648,6 +721,7 @@ function Campaigns() {
 
                     <p className="campaign-card-copy">{campaign.description}</p>
 
+<<<<<<< Updated upstream
                     {campaign.verification?.checkedAt ? (
                       <div className="campaign-card-audit">
                         <p>
@@ -673,6 +747,13 @@ function Campaigns() {
                           : "Verification hasn't run yet."}
                       </p>
                     )}
+=======
+                    <div className="campaign-card-audit">
+                      <p>Checked: {dateFormatter.format(new Date(campaign.verification.checkedAt))}</p>
+                      <p>Risk level: <span className="campaign-risk">{campaign.verification.riskLevel}</span></p>
+                      <p>Health score: <span className="campaign-risk">{campaign.healthScore}</span></p>
+                    </div>
+>>>>>>> Stashed changes
 
                     {!!campaign.verification?.flaggedTerms?.length && (
                       <div className="campaign-chip-group">
@@ -687,10 +768,14 @@ function Campaigns() {
                       </div>
                     )}
 
+<<<<<<< Updated upstream
                     {!!campaign.verification?.issues?.length && (
+=======
+                    {!!campaign.generatedInsights?.length && (
+>>>>>>> Stashed changes
                       <ul className="campaign-issues">
-                        {campaign.verification.issues.map((issue, index) => (
-                          <li key={`${campaign._id}-${index}`}>{issue}</li>
+                        {campaign.generatedInsights.map((issue, index) => (
+                          <li key={`${campaign._id}-insight-${index}`}>{issue}</li>
                         ))}
                       </ul>
                     )}
@@ -715,6 +800,19 @@ function Campaigns() {
                         )}
                       </div>
                     )}
+
+                    <div className="campaign-action-row">
+                      <button type="button" className="campaign-action-button" onClick={() => handleEdit(campaign)}>
+                        Edit
+                      </button>
+                      <button
+                        type="button"
+                        className="campaign-action-button campaign-action-delete"
+                        onClick={() => handleDelete(campaign._id)}
+                      >
+                        Delete
+                      </button>
+                    </div>
                   </article>
                 );
               })}

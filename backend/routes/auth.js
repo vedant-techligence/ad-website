@@ -1,14 +1,16 @@
 const express = require("express");
-const router = express.Router();
-const bcrypt = require("bcryptjs");
-const jwt = require("jsonwebtoken");
-const User = require("../models/User");
+const { register, login, completeOnboarding, getProfile } = require("../controllers/authController");
 const { authMiddleware } = require("../middleware/auth");
+const { validate } = require("../middleware/validate");
+const {
+  registerValidation,
+  loginValidation,
+  onboardingValidation,
+} = require("../validations/authValidation");
 
-// REGISTER
-router.post("/register", async (req, res) => {
-  const { name, email, password } = req.body;
+const router = express.Router();
 
+<<<<<<< Updated upstream
   try {
     // Check if user already exists
     const existingUser = await User.findOne({ email });
@@ -81,5 +83,11 @@ router.post("/onboarding", authMiddleware, async (req, res) => {
     res.status(500).json({ message: "Server error." });
   }
 });
+=======
+router.post("/register", registerValidation, validate, register);
+router.post("/login", loginValidation, validate, login);
+router.post("/onboarding", authMiddleware, onboardingValidation, validate, completeOnboarding);
+router.get("/me", authMiddleware, getProfile);
+>>>>>>> Stashed changes
 
 module.exports = router;

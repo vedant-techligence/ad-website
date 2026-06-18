@@ -1,21 +1,24 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
 import "./Navbar.css";
 
 const NAV_LINKS = [
   { label: "DASHBOARD", to: "/dashboard" },
   { label: "CAMPAIGNS", to: "/campaigns" },
   { label: "ANALYTICS", to: "/analytics" },
-  { label: "AUDIENCE", to: "/audience" },
-  { label: "BILLING", to: "/billing" },
+  { label: "REPORTS", to: "/reports" },
+  { label: "NOTIFICATIONS", to: "/notifications" },
+  { label: "GEO", to: "/geo" },
 ];
 
 function Navbar() {
   const location = useLocation();
   const navigate = useNavigate();
-  const isLoggedIn = !!localStorage.getItem("token");
+  const { token, logout } = useAuth();
+  const isLoggedIn = !!token;
 
   const handleLogout = () => {
-    localStorage.removeItem("token");
+    logout();
     navigate("/login");
   };
 
@@ -23,7 +26,7 @@ function Navbar() {
     <div className="navbar-wrapper">
       <nav className="navbar">
         {/* Brand */}
-        <div className="navbar-brand">
+        <Link to={isLoggedIn ? "/dashboard" : "/login"} className="navbar-brand">
           <img
             src="https://www.techligence.in/logo.png"
             alt="Techligence"
@@ -31,7 +34,7 @@ function Navbar() {
             onError={(e) => { e.target.style.display = "none"; }}
           />
           <span className="navbar-title">TECHLIGENCE</span>
-        </div>
+        </Link>
 
         {/* Nav links — only when logged in */}
         {isLoggedIn && (

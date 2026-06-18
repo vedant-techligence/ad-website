@@ -191,6 +191,7 @@ const campaignSchema = new mongoose.Schema(
     // ---- Lifecycle — expanded to include payment + verification states ----
     status: {
       type: String,
+<<<<<<< Updated upstream:backend/models/Campaign.model.js
       enum: [
         "draft", // created, not yet submitted for payment
         "pending_payment", // payment initiated, awaiting confirmation
@@ -202,6 +203,15 @@ const campaignSchema = new mongoose.Schema(
       ],
       default: "draft",
       index: true,
+=======
+      enum: ["draft", "scheduled", "active", "paused", "completed", "rejected", "public"],
+      default: "active",
+    },
+    publicationStatus: {
+      type: String,
+      enum: ["public", "blocked", "scheduled"],
+      default: "public",
+>>>>>>> Stashed changes:backend/models/Campaign.js
     },
     isPublic: {
       type: Boolean,
@@ -210,6 +220,53 @@ const campaignSchema = new mongoose.Schema(
     publishedAt: {
       type: Date,
       default: null,
+    },
+    budget: {
+      allocated: { type: Number, default: 0 },
+      spent: { type: Number, default: 0 },
+      currency: { type: String, default: "USD" },
+    },
+    schedule: {
+      startDate: { type: Date, default: null },
+      endDate: { type: Date, default: null },
+    },
+    targeting: {
+      audienceSegments: { type: [String], default: [] },
+      regions: { type: [String], default: [] },
+      devices: { type: [String], default: [] },
+    },
+    channels: {
+      type: [String],
+      default: [],
+    },
+    tags: {
+      type: [String],
+      default: [],
+    },
+    location: {
+      city: { type: String, default: "" },
+      venue: { type: String, default: "" },
+      lat: { type: Number, default: 28.6139 },
+      lng: { type: Number, default: 77.209 },
+    },
+    performanceGoals: {
+      impressions: { type: Number, default: 0 },
+      conversions: { type: Number, default: 0 },
+      engagementRate: { type: Number, default: 0 },
+    },
+    sentimentSummary: {
+      positive: { type: Number, default: 0 },
+      neutral: { type: Number, default: 0 },
+      negative: { type: Number, default: 0 },
+      score: { type: Number, default: 0 },
+    },
+    healthScore: {
+      type: Number,
+      default: 0,
+    },
+    generatedInsights: {
+      type: [String],
+      default: [],
     },
   },
   { timestamps: true },

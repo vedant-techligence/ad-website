@@ -1,4 +1,4 @@
-@import url("https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700&family=Rajdhani:wght@400;500;600&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700&family=Rajdhani:wght@400;500;600;700&display=swap");
 
 *,
 *::before,
@@ -13,33 +13,33 @@
   --bg-secondary: #f0f9ff;
   --bg-card: #ffffff;
   --bg-card-hover: #f5fbff;
-
   --accent-cyan: #00a8cc;
   --accent-blue: #0055cc;
-  --accent-purple: #7c3aed;
-  --accent-glow: rgba(0, 168, 204, 0.15);
-
+  --accent-glow: rgba(0, 168, 204, 0.14);
   --text-primary: #061325;
   --text-secondary: #2a4a6a;
   --text-muted: #6a8aaa;
-
   --border-color: #c0dce8;
   --border-accent: rgba(0, 168, 204, 0.4);
-
+  --success: #0a8d6b;
+  --warning: #a96413;
+  --danger: #b2294b;
   --font-heading: "Orbitron", sans-serif;
   --font-body: "Rajdhani", sans-serif;
 }
 
 html,
 body {
-  height: 100%;
-  width: 100%;
-  background-color: var(--bg-primary);
+  min-height: 100%;
+  background: var(--bg-primary);
   color: var(--text-primary);
   font-family: var(--font-body);
-  font-size: 16px;
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
+}
+
+body {
+  padding-top: 5.2rem;
 }
 
 #root {
@@ -51,16 +51,61 @@ body {
 a {
   color: var(--accent-cyan);
   text-decoration: none;
-  transition: color 0.2s ease;
 }
 
 a:hover {
   color: var(--accent-blue);
 }
 
+button,
 input,
-button {
+textarea,
+select {
   font-family: var(--font-body);
+}
+
+.app-loading-screen {
+  min-height: calc(100vh - 160px);
+  display: grid;
+  place-items: center;
+  color: var(--text-secondary);
+  font-size: 1.05rem;
+}
+
+.page-shell {
+  min-height: calc(100vh - 160px);
+  padding: 2rem 1.5rem 3rem;
+  background:
+    radial-gradient(circle at top left, rgba(0, 168, 204, 0.14), transparent 24%),
+    radial-gradient(circle at 85% 15%, rgba(0, 85, 204, 0.12), transparent 18%),
+    linear-gradient(180deg, #edf8ff 0%, #dfeefa 100%);
+}
+
+.page-width {
+  width: min(1180px, 100%);
+  margin: 0 auto;
+}
+
+.feature-card {
+  background: rgba(255, 255, 255, 0.88);
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  border-radius: 28px;
+  box-shadow: 0 24px 60px rgba(6, 19, 37, 0.12);
+  backdrop-filter: blur(14px);
+}
+
+.section-kicker {
+  font-family: var(--font-heading);
+  color: var(--accent-blue);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  font-size: 0.75rem;
+}
+
+.section-title {
+  font-family: var(--font-heading);
+  color: var(--text-primary);
+  letter-spacing: 0.04em;
 }
 
 ::-webkit-scrollbar {
@@ -73,5 +118,5 @@ button {
 
 ::-webkit-scrollbar-thumb {
   background: var(--accent-cyan);
-  border-radius: 3px;
+  border-radius: 999px;
 }

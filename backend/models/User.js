@@ -22,6 +22,24 @@ const userSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    role: {
+      type: String,
+      default: "admin",
+    },
+    lastLoginAt: {
+      type: Date,
+      default: null,
+    },
+    preferences: {
+      reportFrequency: {
+        type: String,
+        default: "weekly",
+      },
+      healthAlertThreshold: {
+        type: Number,
+        default: 65,
+      },
+    },
   },
   { timestamps: true },
 );

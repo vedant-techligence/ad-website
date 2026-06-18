@@ -1,11 +1,6 @@
-const express = require("express");
-const cors = require("cors");
-const helmet = require("helmet");
-const rateLimit = require("express-rate-limit");
-const hpp = require("hpp");
-const path = require("path");
 require("dotenv").config();
 
+<<<<<<< Updated upstream
 const authRoutes = require("./routes/auth");
 const campaignRoutes = require("./routes/campaign.routes");
 const { connectDatabase } = require("./config/db");
@@ -70,14 +65,28 @@ app.use("/api/auth/register", authLimiter);
 app.use("/api/auth", authRoutes);
 app.use("/api/campaigns", campaignRoutes);
 
+=======
+const app = require("./app");
+const { connectDatabase } = require("./config/db");
+
+>>>>>>> Stashed changes
 const PORT = Number(process.env.PORT) || 5000;
 
 const startServer = async () => {
   try {
     await connectDatabase();
-    app.listen(PORT, () => {
+    const server = app.listen(PORT, () => {
       console.log(`Server running on port ${PORT}`);
     });
+
+    const shutdown = () => {
+      server.close(() => {
+        process.exit(0);
+      });
+    };
+
+    process.on("SIGINT", shutdown);
+    process.on("SIGTERM", shutdown);
   } catch (error) {
     console.error("DB connection error:", error);
     process.exit(1);

@@ -396,6 +396,28 @@
   background: #dcecf5;
 }
 
+.campaign-action-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+  margin-top: 1rem;
+}
+
+.campaign-action-button {
+  border: 1px solid rgba(0, 85, 204, 0.16);
+  border-radius: 999px;
+  padding: 0.5rem 0.95rem;
+  background: rgba(255, 255, 255, 0.88);
+  color: var(--accent-blue);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.campaign-action-delete {
+  color: var(--danger);
+  border-color: rgba(178, 41, 75, 0.2);
+}
+
 .campaigns-modal-backdrop {
   position: fixed;
   inset: 0;
