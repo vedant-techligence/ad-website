@@ -8,6 +8,7 @@ const NAV_LINKS = [
   { label: "ANALYTICS", to: "/analytics" },
   { label: "AUDIENCE", to: "/audience" },
   { label: "BILLING", to: "/billing" },
+  { label: "PROFILE", to: "/profile" },
 ];
 
 function Navbar() {

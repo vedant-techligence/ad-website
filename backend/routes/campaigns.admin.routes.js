@@ -14,7 +14,7 @@ router.get(
       const [total, active, pending, revenueResult] = await Promise.all([
         Campaign.countDocuments(),
         Campaign.countDocuments({ status: "public" }),
-        Campaign.countDocuments({ status: "paid_pending_verification" }),
+        Campaign.countDocuments({ status: "pending_review" }),
         Campaign.aggregate([
           { $match: { status: { $in: ["public", "completed"] } } },
           { $group: { _id: null, total: { $sum: "$estimatedCost" } } },
@@ -25,7 +25,6 @@ router.get(
         totalCampaigns: total,
         activeCampaigns: active,
         pendingApprovals: pending,
-        revenueGenerated: revenueResult[0]?.total || 0,
         activeRobots: null,
       });
     } catch {
@@ -73,11 +72,7 @@ router.get("/:id", authMiddleware, requireRole("admin"), async (req, res) => {
 });
 
 // PATCH /api/campaigns/admin/:id/approve
-router.patch(
-  "/:id/approve",
-  authMiddleware,
-  requireRole("admin"),
-  async (req, res) => {
+router.patch("/:id/approve", authMiddleware, requireRole("admin"), async (req, res) => {
     try {
       const campaign = await Campaign.findByIdAndUpdate(
         req.params.id,
@@ -88,11 +83,11 @@ router.patch(
           "verification.status": "approved",
           "verification.approvedAt": new Date(),
           "verification.checkedAt": new Date(),
+          "verification.checksSummary": "Approved by admin.",
         },
         { new: true },
       );
-      if (!campaign)
-        return res.status(404).json({ message: "Campaign not found." });
+      if (!campaign) return res.status(404).json({ message: "Campaign not found." });
       res.status(200).json(campaign);
     } catch {
       res.status(500).json({ message: "Failed to approve campaign." });
@@ -101,12 +96,9 @@ router.patch(
 );
 
 // PATCH /api/campaigns/admin/:id/reject
-router.patch(
-  "/:id/reject",
-  authMiddleware,
-  requireRole("admin"),
-  async (req, res) => {
+router.patch("/:id/reject", authMiddleware, requireRole("admin"), async (req, res) => {
     try {
+      const { reason } = req.body;
       const campaign = await Campaign.findByIdAndUpdate(
         req.params.id,
         {
@@ -114,11 +106,11 @@ router.patch(
           isPublic: false,
           "verification.status": "rejected",
           "verification.checkedAt": new Date(),
+          "verification.checksSummary": reason ? `Rejected by admin: ${reason}` : "Rejected by admin.",
         },
         { new: true },
       );
-      if (!campaign)
-        return res.status(404).json({ message: "Campaign not found." });
+      if (!campaign) return res.status(404).json({ message: "Campaign not found." });
       res.status(200).json(campaign);
     } catch {
       res.status(500).json({ message: "Failed to reject campaign." });

@@ -2,6 +2,7 @@ import { useState } from "react";
 import { API_ORIGIN } from "../../api/axios";
 
 const STATUS_ACTIONS = {
+  pending_review: ["approve", "reject"],
   paid_pending_verification: ["approve", "reject"],
   public: ["pause", "reject"],
   paused: ["approve", "reject"],
@@ -23,6 +24,20 @@ const resolveMediaUrl = (url) =>
 function CampaignDetailModal({ campaign, loading, error, onClose, onAction }) {
   const actions = campaign ? STATUS_ACTIONS[campaign.status] || [] : [];
   const [previewImage, setPreviewImage] = useState(null);
+  const [rejectReason, setRejectReason] = useState("");
+  const [showRejectInput, setShowRejectInput] = useState(false);
+
+  const handleAction = (action) => {
+    if (action === "reject") {
+      if (!showRejectInput) { setShowRejectInput(true); return; }
+      onAction(action, rejectReason);
+      setShowRejectInput(false);
+      setRejectReason("");
+    } else {
+      setShowRejectInput(false);
+      onAction(action);
+    }
+  };
 
   return (
     <div className="admin-campaign-modal__overlay" onClick={onClose}>
@@ -211,15 +226,36 @@ function CampaignDetailModal({ campaign, loading, error, onClose, onAction }) {
                 <button
                   key={action}
                   className={`admin-campaign-modal__action-btn admin-campaign-modal__action-btn--${action}`}
-                  onClick={() => onAction(action)}
+                  onClick={() => handleAction(action)}
                 >
                   {ACTION_LABELS[action]}
                 </button>
               ))}
+              {showRejectInput && (
+                <div style={{ width: "100%", marginTop: 8 }}>
+                  <input
+                    type="text"
+                    placeholder="Rejection reason (optional)"
+                    value={rejectReason}
+                    onChange={(e) => setRejectReason(e.target.value)}
+                    style={{ width: "100%", padding: "8px 12px", borderRadius: 6, border: "1px solid #e2e8f0", fontSize: 13 }}
+                    autoFocus
+                  />
+                  <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
+                    <button
+                      className="admin-campaign-modal__action-btn admin-campaign-modal__action-btn--reject"
+                      onClick={() => { onAction("reject", rejectReason); setShowRejectInput(false); setRejectReason(""); }}
+                    >Confirm Reject</button>
+                    <button
+                      className="admin-campaign-modal__action-btn"
+                      style={{ background: "#e2e8f0", color: "#374151" }}
+                      onClick={() => { setShowRejectInput(false); setRejectReason(""); }}
+                    >Cancel</button>
+                  </div>
+                </div>
+              )}
               {!actions.length && (
-                <p className="admin-campaigns__no-action">
-                  No actions available for this status.
-                </p>
+                <p className="admin-campaigns__no-action">No actions available for this status.</p>
               )}
             </div>
           </>

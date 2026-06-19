@@ -12,6 +12,7 @@ import Onboarding from "./pages/Onboarding";
 import Dashboard from "./pages/Dashboard";
 import Campaigns from "./pages/Campaigns";
 import Billing from "./pages/Billing";
+import Profile from "./pages/Profile";
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
 import { AuthProvider } from "./context/AuthContext";
@@ -87,6 +88,14 @@ function App() {
               element={
                 <ProtectedRoute>
                   <Billing />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/profile"
+              element={
+                <ProtectedRoute>
+                  <Profile />
                 </ProtectedRoute>
               }
             />

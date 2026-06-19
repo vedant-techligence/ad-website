@@ -185,4 +185,30 @@ router.post("/onboarding", authMiddleware, async (req, res) => {
   }
 });
 
+router.get("/me", authMiddleware, async (req, res) => {
+  try {
+    const user = await User.findById(req.user.userId).select("-password -refreshTokenHash -refreshTokenExpiresAt");
+    if (!user) return res.status(404).json({ message: "User not found." });
+    res.status(200).json({ user });
+  } catch (err) {
+    console.error("Get profile error:", err);
+    res.status(500).json({ message: "Server error." });
+  }
+});
+
+router.put("/profile", authMiddleware, async (req, res) => {
+  const { name, phone, businessName, industry, website, companySize, country, city, bio, linkedIn, twitter, timezone } = req.body;
+  try {
+    const user = await User.findByIdAndUpdate(
+      req.user.userId,
+      { name, phone, businessName, industry, website, companySize, country, city, bio, linkedIn, twitter, timezone, isProfileComplete: true },
+      { new: true, runValidators: true }
+    ).select("-password -refreshTokenHash -refreshTokenExpiresAt");
+    res.status(200).json({ user, message: "Profile updated successfully." });
+  } catch (err) {
+    console.error("Update profile error:", err);
+    res.status(500).json({ message: "Server error." });
+  }
+});
+
 module.exports = router;
