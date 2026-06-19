@@ -196,6 +196,7 @@ const campaignSchema = new mongoose.Schema(
         "pending_payment", // payment initiated, awaiting confirmation
         "paid_pending_verification", // paid, waiting on content moderation
         "public", // verified + live (kept friend's naming instead of "active")
+        "paused", // temporarily halted by advertiser (e.g. to update content or targeting)
         "rejected", // failed verification
         "completed", // ran its full duration
         "cancelled", // advertiser cancelled

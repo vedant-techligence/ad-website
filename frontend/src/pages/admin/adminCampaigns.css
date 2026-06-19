@@ -1,0 +1,252 @@
+.admin-campaigns {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 1.5rem 2rem;
+  margin: 2rem auto 0;
+  max-width: 1100px;
+}
+
+.admin-campaigns__row {
+  cursor: pointer;
+}
+
+.admin-campaigns {
+  font-family: var(--font-body);
+}
+
+.admin-campaigns__title {
+  font-family: var(--font-heading);
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: var(--accent-cyan);
+  letter-spacing: 0.05em;
+  margin-bottom: 1.5rem;
+  text-align: center;
+}
+
+.admin-campaigns__toolbar {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.admin-campaigns__search {
+  display: flex;
+  gap: 0.5rem;
+  width: 100%;
+  max-width: 420px;
+  justify-content: center;
+}
+
+.admin-campaigns__search-input {
+  flex: 1;
+  max-width: 360px;
+  padding: 0.5rem 0.9rem;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  background: var(--bg-card);
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  font-size: 0.95rem;
+  outline: none;
+  transition: border-color 0.2s ease;
+}
+
+.admin-campaigns__search-input:focus {
+  border-color: var(--accent-cyan);
+}
+
+.admin-campaigns__search-btn {
+  padding: 0.5rem 1.1rem;
+  background: var(--accent-cyan);
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  font-family: var(--font-heading);
+  font-size: 0.75rem;
+  letter-spacing: 0.07em;
+  cursor: pointer;
+  transition: opacity 0.2s ease;
+}
+
+.admin-campaigns__search-btn:hover {
+  opacity: 0.85;
+}
+
+.admin-campaigns__filters {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.4rem;
+}
+
+.admin-campaigns__filter-btn {
+  padding: 0.3rem 0.85rem;
+  border: 1px solid var(--border-color);
+  border-radius: 20px;
+  background: transparent;
+  color: var(--text-muted);
+  font-family: var(--font-body);
+  font-size: 0.85rem;
+  cursor: pointer;
+  text-transform: capitalize;
+  transition: all 0.2s ease;
+}
+
+.admin-campaigns__filter-btn:hover {
+  border-color: var(--accent-cyan);
+  color: var(--accent-cyan);
+}
+
+.admin-campaigns__filter-btn--active {
+  background: var(--accent-glow);
+  border-color: var(--accent-cyan);
+  color: var(--accent-cyan);
+}
+
+.admin-campaigns__status {
+  color: var(--text-muted);
+  font-size: 0.95rem;
+  text-align: center;
+}
+
+.admin-campaigns__error {
+  color: #e53e3e;
+  font-size: 0.95rem;
+  margin-bottom: 1rem;
+  text-align: center;
+}
+
+.admin-campaigns__table-wrapper {
+  overflow-x: auto;
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+}
+
+.admin-campaigns__table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.admin-campaigns__table thead {
+  background: var(--bg-secondary);
+}
+
+.admin-campaigns__table th {
+  padding: 0.75rem 1rem;
+  text-align: left;
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--text-muted);
+  border-bottom: 1px solid var(--border-color);
+  white-space: nowrap;
+}
+
+.admin-campaigns__table td {
+  padding: 0.75rem 1rem;
+  color: var(--text-secondary);
+  border-bottom: 1px solid var(--border-color);
+  vertical-align: middle;
+}
+
+.admin-campaigns__table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.admin-campaigns__table tbody tr:hover td {
+  background: var(--bg-card-hover);
+}
+
+.admin-campaigns__badge {
+  display: inline-block;
+  padding: 0.2rem 0.6rem;
+  border-radius: 20px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-transform: capitalize;
+  white-space: nowrap;
+}
+
+.admin-campaigns__badge--public {
+  background: #c6f6d5;
+  color: #276749;
+}
+.admin-campaigns__badge--paused {
+  background: #fefcbf;
+  color: #744210;
+}
+.admin-campaigns__badge--rejected {
+  background: #fed7d7;
+  color: #9b2335;
+}
+.admin-campaigns__badge--draft {
+  background: #e2e8f0;
+  color: #4a5568;
+}
+.admin-campaigns__badge--completed {
+  background: #bee3f8;
+  color: #2a4365;
+}
+.admin-campaigns__badge--cancelled {
+  background: #fed7d7;
+  color: #9b2335;
+}
+.admin-campaigns__badge--pending_payment {
+  background: #feebc8;
+  color: #7b341e;
+}
+.admin-campaigns__badge--paid_pending_verification {
+  background: #e9d8fd;
+  color: #553c9a;
+}
+
+.admin-campaigns__actions {
+  display: flex;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+
+.admin-campaigns__action-btn {
+  padding: 0.3rem 0.75rem;
+  border: none;
+  border-radius: 5px;
+  font-family: var(--font-body);
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.2s ease;
+}
+
+.admin-campaigns__action-btn:hover {
+  opacity: 0.8;
+}
+
+.admin-campaigns__action-btn--approve {
+  background: #c6f6d5;
+  color: #276749;
+}
+.admin-campaigns__action-btn--reject {
+  background: #fed7d7;
+  color: #9b2335;
+}
+.admin-campaigns__action-btn--pause {
+  background: #fefcbf;
+  color: #744210;
+}
+
+.admin-campaigns__action-btn--view {
+  background: var(--accent-glow);
+  color: var(--accent-cyan);
+  border: 1px solid var(--border-accent);
+}
+
+.admin-campaigns__no-action {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}

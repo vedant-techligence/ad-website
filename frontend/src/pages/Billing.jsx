@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import API from "../api/axios";
+import { useAuth } from "../context/useAuth";
 import "./Billing.css";
 
 const STATUS_LABELS = {
@@ -41,6 +42,7 @@ function loadRazorpayScript() {
 
 function Billing() {
   const navigate = useNavigate();
+  const { user, loading: authLoading } = useAuth();
   const [campaigns, setCampaigns] = useState([]);
   const [loading, setLoading] = useState(true);
   const [pageError, setPageError] = useState("");
@@ -49,21 +51,19 @@ function Billing() {
   const [paymentSuccess, setPaymentSuccess] = useState("");
 
   useEffect(() => {
-    const token = localStorage.getItem("token");
-    if (!token) {
+    if (authLoading) return;
+
+    if (!user) {
       navigate("/login");
       return;
     }
 
     const loadCampaigns = async () => {
       try {
-        const response = await API.get("/campaigns", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        const response = await API.get("/campaigns");
         setCampaigns(response.data);
       } catch (requestError) {
         if (requestError.response?.status === 401) {
-          localStorage.removeItem("token");
           navigate("/login");
           return;
         }
@@ -74,7 +74,7 @@ function Billing() {
     };
 
     loadCampaigns();
-  }, [navigate]);
+  }, [authLoading, user, navigate]);
 
   const handleProceedToPayment = async (campaign) => {
     setPaymentError("");

@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import api from "../api/axios";
-import "./FeaturePages.css";
+import "./AdminPayments.css";
 
 const STATUS_COLORS = {
   created: { bg: "rgba(198,126,16,0.12)", color: "#8a4f08" },

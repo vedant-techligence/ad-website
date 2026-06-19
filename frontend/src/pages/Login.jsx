@@ -1,13 +1,28 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import API from "../api/axios";
+import { useAuth } from "../context/useAuth";
 import "./Login.css";
 
 function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const { user, loading: authLoading, login } = useAuth();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (authLoading || !user) return;
+    if (user.isBanned) {
+      navigate("/banned", { replace: true });
+    } else if (user.role === "admin") {
+      navigate("/admin/dashboard", { replace: true });
+    } else {
+      navigate(user.isProfileComplete ? "/dashboard" : "/onboarding", {
+        replace: true,
+      });
+    }
+  }, [user, authLoading, navigate]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -19,18 +34,22 @@ function Login() {
     }
 
     try {
-      const res = await API.post("/auth/login", { email, password });
-      const { token, isProfileComplete } = res.data;
-      localStorage.setItem("token", token);
-      if (isProfileComplete) {
-        navigate("/dashboard");
-      } else {
-        navigate("/onboarding");
-      }
+      setSubmitting(true);
+      const { role, isProfileComplete, isBanned } = await login(
+        email,
+        password,
+      );
+      if (isBanned) navigate("/banned");
+      else if (role === "admin") navigate("/admin/dashboard");
+      else navigate(isProfileComplete ? "/dashboard" : "/onboarding");
     } catch (err) {
       setError(err.response?.data?.message || "Something went wrong.");
+    } finally {
+      setSubmitting(false);
     }
   };
+
+  if (authLoading || user) return null;
 
   return (
     <div className="login-container">
@@ -53,8 +72,8 @@ function Login() {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
           />
-          <button className="login-button" type="submit">
-            Sign In
+          <button className="login-button" type="submit" disabled={submitting}>
+            {submitting ? "Signing in..." : "Sign In"}
           </button>
         </form>
         <p className="login-footer">

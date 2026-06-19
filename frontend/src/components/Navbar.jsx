@@ -1,4 +1,5 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
+import { useAuth } from "../context/useAuth";
 import "./Navbar.css";
 
 const NAV_LINKS = [
@@ -12,28 +13,29 @@ const NAV_LINKS = [
 function Navbar() {
   const location = useLocation();
   const navigate = useNavigate();
-  const isLoggedIn = !!localStorage.getItem("token");
+  const { user, logout } = useAuth();
+  const isLoggedIn = !!user;
 
-  const handleLogout = () => {
-    localStorage.removeItem("token");
+  const handleLogout = async () => {
+    await logout();
     navigate("/login");
   };
 
   return (
     <div className="navbar-wrapper">
       <nav className="navbar">
-        {/* Brand */}
         <div className="navbar-brand">
           <img
             src="https://www.techligence.in/logo.png"
             alt="Techligence"
             className="navbar-logo-img"
-            onError={(e) => { e.target.style.display = "none"; }}
+            onError={(e) => {
+              e.target.style.display = "none";
+            }}
           />
           <span className="navbar-title">TECHLIGENCE</span>
         </div>
 
-        {/* Nav links — only when logged in */}
         {isLoggedIn && (
           <div className="navbar-links">
             {NAV_LINKS.map((link) => (
@@ -48,7 +50,6 @@ function Navbar() {
           </div>
         )}
 
-        {/* Right actions */}
         <div className="navbar-actions">
           {isLoggedIn ? (
             <button className="navbar-cta-button" onClick={handleLogout}>
