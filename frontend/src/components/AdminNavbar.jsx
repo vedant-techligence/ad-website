@@ -4,6 +4,7 @@ import "./AdminNavbar.css";
 
 const ADMIN_NAV_LINKS = [
   { label: "DASHBOARD", to: "/admin/dashboard" },
+  { label: "CAMPAIGNS", to: "/admin/campaigns" },
   { label: "USERS", to: "/admin/users" },
 ];
 

@@ -21,6 +21,7 @@ import AdminLayout from "./pages/admin/AdminLayout"; // ← was imported but nev
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminUsers from "./pages/admin/AdminUsers";
 import Banned from "./pages/Banned";
+import AdminCampaigns from "./pages/admin/AdminCampaigns";
 
 function ScrollToTop() {
   const { pathname } = useLocation();
@@ -101,6 +102,7 @@ function App() {
             >
               <Route index element={<Navigate to="dashboard" replace />} />
               <Route path="dashboard" element={<AdminDashboard />} />
+              <Route path="campaigns" element={<AdminCampaigns />} />
               <Route path="users" element={<AdminUsers />} />
             </Route>
           </Routes>

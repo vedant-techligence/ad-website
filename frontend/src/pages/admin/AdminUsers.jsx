@@ -233,7 +233,7 @@ function AdminUsers() {
                   <td>{formatDate(u.createdAt)}</td>
                   <td className="admin-campaigns__actions">
                     <button
-                      className="admin-campaigns__action-btn--view"
+                      className="admin-campaigns__action-btn admin-campaigns__action-btn--view"
                       onClick={() => openDetail(u._id)}
                     >
                       View
@@ -375,7 +375,7 @@ function AdminUsers() {
                               <td>{formatDate(c.endDate)}</td>
                               <td className="admin-campaigns__actions">
                                 <button
-                                  className="admin-campaigns__action-btn--view"
+                                  className="admin-campaigns__action-btn admin-campaigns__action-btn--view"
                                   onClick={() => openCampaignDetail(c._id)}
                                 >
                                   View Details

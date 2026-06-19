@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { API_ORIGIN } from "../../api/axios";
 
 const STATUS_ACTIONS = {
@@ -21,6 +22,7 @@ const resolveMediaUrl = (url) =>
 
 function CampaignDetailModal({ campaign, loading, error, onClose, onAction }) {
   const actions = campaign ? STATUS_ACTIONS[campaign.status] || [] : [];
+  const [previewImage, setPreviewImage] = useState(null);
 
   return (
     <div className="admin-campaign-modal__overlay" onClick={onClose}>
@@ -185,9 +187,15 @@ function CampaignDetailModal({ campaign, loading, error, onClose, onAction }) {
                       ) : (
                         <img
                           key={m.storedName}
-                          className="admin-campaign-modal__media-item"
+                          className="admin-campaign-modal__media-item admin-campaign-modal__media-item--clickable"
                           src={resolveMediaUrl(m.publicUrl)}
                           alt={m.originalName}
+                          onClick={() =>
+                            setPreviewImage({
+                              url: resolveMediaUrl(m.publicUrl),
+                              alt: m.originalName,
+                            })
+                          }
                         />
                       ),
                     )}
@@ -215,6 +223,26 @@ function CampaignDetailModal({ campaign, loading, error, onClose, onAction }) {
               )}
             </div>
           </>
+        )}
+
+        {previewImage && (
+          <div
+            className="admin-campaign-modal__lightbox"
+            onClick={() => setPreviewImage(null)}
+          >
+            <button
+              className="admin-campaign-modal__lightbox-close"
+              onClick={() => setPreviewImage(null)}
+            >
+              ×
+            </button>
+            <img
+              className="admin-campaign-modal__lightbox-img"
+              src={previewImage.url}
+              alt={previewImage.alt}
+              onClick={(e) => e.stopPropagation()}
+            />
+          </div>
         )}
       </div>
     </div>

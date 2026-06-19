@@ -1,6 +1,11 @@
 .admin-users {
   font-family: var(--font-body);
-  padding: 0 3rem;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 1.5rem 2rem;
 }
 
 .admin-users__title {
@@ -10,13 +15,13 @@
   color: var(--accent-cyan);
   letter-spacing: 0.05em;
   margin-bottom: 1.5rem;
+  text-align: center;
 }
 
 .admin-users__toolbar {
   display: flex;
-  flex-wrap: wrap;
+  flex-direction: column;
   align-items: center;
-  justify-content: space-between;
   gap: 1rem;
   margin-bottom: 1.5rem;
 }
@@ -24,6 +29,9 @@
 .admin-users__search {
   display: flex;
   gap: 0.5rem;
+  width: 100%;
+  max-width: 420px;
+  justify-content: center;
 }
 
 .admin-users__search-input {
@@ -34,7 +42,8 @@
   color: var(--text-primary);
   font-family: var(--font-body);
   font-size: 0.9rem;
-  min-width: 260px;
+  flex: 1;
+  min-width: 0;
   outline: none;
   transition: border-color 0.2s ease;
 }
@@ -64,6 +73,7 @@
 .admin-users__filters {
   display: flex;
   flex-wrap: wrap;
+  justify-content: center;
   gap: 0.4rem;
 }
 
