@@ -10,6 +10,7 @@ require("dotenv").config();
 const authRoutes = require("./routes/auth");
 const campaignRoutes = require("./routes/campaign.routes");
 const campaignAdminRoutes = require("./routes/campaigns.admin.routes");
+const usersAdminRoutes = require("./routes/adminUsers");
 
 const { connectDatabase } = require("./config/db");
 
@@ -65,6 +66,7 @@ const authLimiter = rateLimit({
 });
 
 app.use("/api/admin/campaigns", campaignAdminRoutes);
+app.use("/api/admin/users", usersAdminRoutes);
 
 app.use("/api/auth/login", authLimiter);
 app.use("/api/auth/register", authLimiter);

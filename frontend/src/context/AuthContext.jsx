@@ -30,6 +30,8 @@ export function AuthProvider({ children }) {
         setUser({
           role: res.data.role,
           isProfileComplete: res.data.isProfileComplete,
+          isBanned: res.data.isBanned,
+          banReason: res.data.banReason,
         });
       } catch {
         setUser(null);
@@ -46,6 +48,8 @@ export function AuthProvider({ children }) {
     setUser({
       role: res.data.role,
       isProfileComplete: res.data.isProfileComplete,
+      isBanned: res.data.isBanned,
+      banReason: res.data.banReason,
     });
     return res.data;
   };

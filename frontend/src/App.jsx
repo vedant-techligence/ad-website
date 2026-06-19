@@ -19,6 +19,8 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import AdminProtectedRoute from "./components/AdminProtectedRoute";
 import AdminLayout from "./pages/admin/AdminLayout"; // ← was imported but never used
 import AdminDashboard from "./pages/admin/AdminDashboard";
+import AdminUsers from "./pages/admin/AdminUsers";
+import Banned from "./pages/Banned";
 
 function ScrollToTop() {
   const { pathname } = useLocation();
@@ -53,6 +55,7 @@ function App() {
             <Route path="/" element={<Login />} />
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<Signup />} />
+            <Route path="/banned" element={<Banned />} />
             {/* ── Normal user protected routes ── */}
             <Route
               path="/onboarding"
@@ -98,6 +101,7 @@ function App() {
             >
               <Route index element={<Navigate to="dashboard" replace />} />
               <Route path="dashboard" element={<AdminDashboard />} />
+              <Route path="users" element={<AdminUsers />} />
             </Route>
           </Routes>
         </SiteChrome>

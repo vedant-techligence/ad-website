@@ -13,11 +13,15 @@ function Login() {
 
   useEffect(() => {
     if (authLoading || !user) return;
-    if (user.role === "admin") navigate("/admin/dashboard", { replace: true });
-    else
+    if (user.isBanned) {
+      navigate("/banned", { replace: true });
+    } else if (user.role === "admin") {
+      navigate("/admin/dashboard", { replace: true });
+    } else {
       navigate(user.isProfileComplete ? "/dashboard" : "/onboarding", {
         replace: true,
       });
+    }
   }, [user, authLoading, navigate]);
 
   const handleSubmit = async (e) => {
@@ -31,8 +35,12 @@ function Login() {
 
     try {
       setSubmitting(true);
-      const { role, isProfileComplete } = await login(email, password);
-      if (role === "admin") navigate("/admin/dashboard");
+      const { role, isProfileComplete, isBanned } = await login(
+        email,
+        password,
+      );
+      if (isBanned) navigate("/banned");
+      else if (role === "admin") navigate("/admin/dashboard");
       else navigate(isProfileComplete ? "/dashboard" : "/onboarding");
     } catch (err) {
       setError(err.response?.data?.message || "Something went wrong.");

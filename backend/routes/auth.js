@@ -96,6 +96,8 @@ router.post("/login", async (req, res) => {
       accessToken,
       role: user.role,
       isProfileComplete: user.isProfileComplete,
+      isBanned: user.isBanned,
+      banReason: user.banReason,
     });
   } catch (err) {
     console.error("Login error:", err);
@@ -135,7 +137,14 @@ router.post("/refresh", async (req, res) => {
 
     setRefreshCookie(res, newRefreshToken);
 
-    res.status(200).json({ accessToken: newAccessToken, role: user.role });
+    res
+      .status(200)
+      .json({
+        accessToken: newAccessToken,
+        role: user.role,
+        isBanned: user.isBanned,
+        banReason: user.banReason,
+      });
   } catch {
     return res.status(401).json({ message: "Session expired." });
   }

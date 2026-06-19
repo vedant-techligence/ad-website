@@ -1,0 +1,51 @@
+.banned-container {
+  min-height: 80vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+}
+
+.banned-card {
+  max-width: 420px;
+  width: 100%;
+  text-align: center;
+  background: #fff;
+  border: 1px solid #fed7d7;
+  border-radius: 12px;
+  padding: 2.5rem 2rem;
+}
+
+.banned-card h2 {
+  color: #9b2335;
+  margin-bottom: 0.75rem;
+}
+
+.banned-message {
+  color: #444;
+  margin-bottom: 1rem;
+}
+
+.banned-reason {
+  background: #fed7d7;
+  color: #9b2335;
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  margin-bottom: 1rem;
+  text-align: left;
+}
+
+.banned-contact {
+  color: #666;
+  font-size: 0.9rem;
+  margin-bottom: 1.5rem;
+}
+
+.banned-logout {
+  padding: 0.6rem 1.5rem;
+  border: none;
+  border-radius: 6px;
+  background: #111;
+  color: #fff;
+  cursor: pointer;
+}
