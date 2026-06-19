@@ -1,4 +1,10 @@
-import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
+import {
+  BrowserRouter,
+  Routes,
+  Route,
+  Navigate,
+  useLocation,
+} from "react-router-dom";
 import { useEffect } from "react";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
@@ -11,6 +17,7 @@ import Footer from "./components/Footer";
 import { AuthProvider } from "./context/AuthContext";
 import ProtectedRoute from "./components/ProtectedRoute";
 import AdminProtectedRoute from "./components/AdminProtectedRoute";
+import AdminLayout from "./pages/admin/AdminLayout"; // ← was imported but never used
 import AdminDashboard from "./pages/admin/AdminDashboard";
 
 function ScrollToTop() {
@@ -21,14 +28,16 @@ function ScrollToTop() {
   return null;
 }
 
+// SiteChrome only wraps non-admin routes now — admin routes render their own chrome via AdminLayout
 function SiteChrome({ children }) {
   const { pathname } = useLocation();
   const isAdminRoute = pathname.startsWith("/admin");
+  if (isAdminRoute) return children; // ← let AdminLayout handle its own header/footer
   return (
     <>
-      {!isAdminRoute && <Navbar />}
+      <Navbar />
       {children}
-      {!isAdminRoute && <Footer />}
+      <Footer />
     </>
   );
 }
@@ -40,9 +49,11 @@ function App() {
       <AuthProvider>
         <SiteChrome>
           <Routes>
+            {/* ── Public routes ── */}
             <Route path="/" element={<Login />} />
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<Signup />} />
+            {/* ── Normal user protected routes ── */}
             <Route
               path="/onboarding"
               element={
@@ -75,14 +86,19 @@ function App() {
                 </ProtectedRoute>
               }
             />
+
+            {/* ── Admin routes ── */}
             <Route
-              path="/admin/dashboard"
+              path="/admin"
               element={
                 <AdminProtectedRoute>
-                  <AdminDashboard />
+                  <AdminLayout />
                 </AdminProtectedRoute>
               }
-            />
+            >
+              <Route index element={<Navigate to="dashboard" replace />} />
+              <Route path="dashboard" element={<AdminDashboard />} />
+            </Route>
           </Routes>
         </SiteChrome>
       </AuthProvider>

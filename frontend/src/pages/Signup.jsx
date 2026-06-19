@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "../context/useAuth";
 import API from "../api/axios";
@@ -9,9 +9,18 @@ function Signup() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
-  const { login } = useAuth();
+  const [submitting, setSubmitting] = useState(false);
+  const { user, loading: authLoading, login } = useAuth();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (authLoading || !user) return;
+    if (user.role === "admin") navigate("/admin/dashboard", { replace: true });
+    else
+      navigate(user.isProfileComplete ? "/dashboard" : "/onboarding", {
+        replace: true,
+      });
+  }, [user, authLoading, navigate]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -27,16 +36,18 @@ function Signup() {
     }
 
     try {
-      setLoading(true);
+      setSubmitting(true);
       await API.post("/auth/register", { name, email, password });
       await login(email, password);
       navigate("/onboarding");
     } catch (err) {
       setError(err.response?.data?.message || "Something went wrong.");
     } finally {
-      setLoading(false);
+      setSubmitting(false);
     }
   };
+
+  if (authLoading || user) return null;
 
   return (
     <div className="signup-container">
@@ -66,8 +77,8 @@ function Signup() {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
           />
-          <button className="signup-button" type="submit" disabled={loading}>
-            {loading ? "Creating account..." : "Create Account"}
+          <button className="signup-button" type="submit" disabled={submitting}>
+            {submitting ? "Creating account..." : "Create Account"}
           </button>
         </form>
         <p className="signup-footer">

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "../context/useAuth";
 import "./Login.css";
@@ -7,9 +7,18 @@ function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
-  const { login } = useAuth();
+  const [submitting, setSubmitting] = useState(false);
+  const { user, loading: authLoading, login } = useAuth();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (authLoading || !user) return;
+    if (user.role === "admin") navigate("/admin/dashboard", { replace: true });
+    else
+      navigate(user.isProfileComplete ? "/dashboard" : "/onboarding", {
+        replace: true,
+      });
+  }, [user, authLoading, navigate]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -21,16 +30,18 @@ function Login() {
     }
 
     try {
-      setLoading(true);
+      setSubmitting(true);
       const { role, isProfileComplete } = await login(email, password);
       if (role === "admin") navigate("/admin/dashboard");
       else navigate(isProfileComplete ? "/dashboard" : "/onboarding");
     } catch (err) {
       setError(err.response?.data?.message || "Something went wrong.");
     } finally {
-      setLoading(false);
+      setSubmitting(false);
     }
   };
+
+  if (authLoading || user) return null;
 
   return (
     <div className="login-container">
@@ -53,8 +64,8 @@ function Login() {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
           />
-          <button className="login-button" type="submit" disabled={loading}>
-            {loading ? "Signing in..." : "Sign In"}
+          <button className="login-button" type="submit" disabled={submitting}>
+            {submitting ? "Signing in..." : "Sign In"}
           </button>
         </form>
         <p className="login-footer">
