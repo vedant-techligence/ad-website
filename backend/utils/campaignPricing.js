@@ -15,21 +15,27 @@ function calculateCampaignEstimate({
     1,
     Math.ceil((new Date(endDate) - new Date(startDate)) / msPerDay),
   );
+  const repeatRateNum = Number(repeatRate); 
+  const dailyBudgetCapNum = Number(dailyBudgetCap);  
 
-  const { BASE_RATE_PER_REPEAT_PER_DAY, PLATFORM_FEE_PERCENT, GST_PERCENT } =
-    pricingConfig;
+  const { PRICING } = pricingConfig;
 
-  const baseCost = durationDays * repeatRate * BASE_RATE_PER_REPEAT_PER_DAY;
-  const platformFee = (baseCost * PLATFORM_FEE_PERCENT) / 100;
+  const baseCost = durationDays * repeatRateNum * PRICING.baseRatePerDay;
+
+  const platformFee = PRICING.platformFee;
+
   const subtotal = baseCost + platformFee;
-  const gst = (subtotal * GST_PERCENT) / 100;
+
+  const gst = subtotal * PRICING.gstRate;
+
   const estimatedCost = Math.round(subtotal + gst);
 
   const avgDailyCost = Math.round((estimatedCost / durationDays) * 100) / 100;
 
+
   let budgetWarning = null;
-  if (dailyBudgetCap && avgDailyCost > dailyBudgetCap) {
-    budgetWarning = `Estimated average daily cost (₹${avgDailyCost}) exceeds your dailyBudgetCap (₹${dailyBudgetCap}).`;
+  if (dailyBudgetCapNum && avgDailyCost > dailyBudgetCapNum) {
+    budgetWarning = `Estimated average daily cost (₹${avgDailyCost}) exceeds your dailyBudgetCap (₹${dailyBudgetCapNum}).`;
   }
 
   return {

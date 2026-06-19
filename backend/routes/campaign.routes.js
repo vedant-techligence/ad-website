@@ -275,7 +275,6 @@ router.post("/", authMiddleware, uploadCampaignFiles, async (req, res) => {
     };
 
     const { breakdown } = calculateCampaignEstimate({
-      
       startDate,
       endDate,
       repeatRate: Number(repeatRate),

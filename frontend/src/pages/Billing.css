@@ -87,6 +87,16 @@
   font-weight: 600;
 }
 
+.billing-page-success {
+  width: min(900px, 100%);
+  margin: 0 auto 1rem;
+  border-radius: 14px;
+  padding: 0.85rem 1rem;
+  background: rgba(0, 168, 204, 0.12);
+  color: #005570;
+  font-weight: 600;
+}
+
 .billing-list-card {
   background: rgba(255, 255, 255, 0.88);
   border: 1px solid rgba(255, 255, 255, 0.7);
