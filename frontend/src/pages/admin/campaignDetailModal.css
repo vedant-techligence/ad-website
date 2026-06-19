@@ -15,7 +15,7 @@
   background: var(--bg-card);
   border: 1px solid var(--border-color);
   border-radius: 12px;
-  max-width: 680px;
+  max-width: 920px;
   width: 100%;
   max-height: 85vh;
   overflow-y: auto;
@@ -46,7 +46,29 @@
   font-size: 1.3rem;
   font-weight: 700;
   color: var(--text-primary);
-  margin-bottom: 0.5rem;
+  margin-bottom: 0;
+}
+
+.admin-campaign-modal__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.25rem;
+}
+
+.admin-campaign-modal__body {
+  display: grid;
+  grid-template-columns: 1.3fr 1fr;
+  gap: 1.5rem;
+  margin-top: 1rem;
+}
+
+.admin-campaign-modal__details .admin-campaign-modal__section:first-child {
+  border-top: none;
+  padding-top: 0;
+  margin-top: 0;
 }
 
 .admin-campaign-modal__section {
@@ -81,23 +103,95 @@
   font-weight: 600;
 }
 
+.admin-campaign-modal__media-col {
+  border-left: 1px solid var(--border-color);
+  padding-left: 1.5rem;
+}
+
+.admin-campaign-modal__media-col h4 {
+  font-family: var(--font-heading);
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--accent-cyan);
+  margin-bottom: 0.5rem;
+}
+
 .admin-campaign-modal__media-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  grid-template-columns: 1fr;
   gap: 0.75rem;
 }
 
 .admin-campaign-modal__media-item {
   width: 100%;
-  max-height: 220px;
+  max-height: 320px;
   object-fit: cover;
   border-radius: 8px;
   border: 1px solid var(--border-color);
   background: var(--bg-secondary);
+  transition: transform 0.2s ease;
+}
+
+.admin-campaign-modal__media-item:hover {
+  transform: scale(1.02);
 }
 
 .admin-campaign-modal__actions {
-  margin-top: 1.5rem;
+  position: sticky;
+  bottom: -1.75rem;
+  margin: 1.5rem -1.75rem -1.75rem;
+  padding: 1rem 1.75rem;
   display: flex;
   gap: 0.6rem;
+  background: var(--bg-card);
+  border-top: 1px solid var(--border-color);
+}
+
+.admin-campaign-modal__action-btn {
+  border: none;
+  border-radius: 8px;
+  padding: 0.55rem 1.3rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.2s ease;
+}
+
+.admin-campaign-modal__action-btn:hover {
+  opacity: 0.85;
+}
+
+.admin-campaign-modal__action-btn--approve {
+  background: #22c55e;
+  color: #052e16;
+}
+
+.admin-campaign-modal__action-btn--reject {
+  background: #ef4444;
+  color: #2a0a0a;
+}
+
+.admin-campaign-modal__action-btn--pause {
+  background: #eab308;
+  color: #2a2106;
+}
+
+.admin-campaigns__no-action {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+
+@media (max-width: 720px) {
+  .admin-campaign-modal__body {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-campaign-modal__media-col {
+    border-left: none;
+    border-top: 1px solid var(--border-color);
+    padding-left: 0;
+    padding-top: 1.25rem;
+  }
 }

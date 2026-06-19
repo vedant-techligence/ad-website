@@ -64,7 +64,7 @@ const authLimiter = rateLimit({
   legacyHeaders: false,
 });
 
-app.use("/api/campaigns/admin", campaignAdminRoutes);
+app.use("/api/admin/campaigns", campaignAdminRoutes);
 
 app.use("/api/auth/login", authLimiter);
 app.use("/api/auth/register", authLimiter);

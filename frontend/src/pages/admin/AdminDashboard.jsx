@@ -43,7 +43,7 @@ function AdminDashboard() {
 
   const fetchStats = async () => {
     try {
-      const res = await API.get("/campaigns/admin/stats");
+      const res = await API.get("/admin/campaigns/stats");
       setStats(res.data);
     } catch (err) {
       setStatsError(err.response?.data?.message || "Failed to fetch stats.");
@@ -59,7 +59,7 @@ function AdminDashboard() {
       const params = {};
       if (q) params.search = q;
       if (s !== "all") params.status = s;
-      const res = await API.get("/campaigns/admin/all", { params });
+      const res = await API.get("/admin/campaigns/all", { params });
       setCampaigns(res.data);
     } catch (err) {
       setCampaignsError(
@@ -102,7 +102,7 @@ function AdminDashboard() {
     setDetailError("");
     setDetailLoading(true);
     try {
-      const res = await API.get(`/campaigns/admin/${id}`);
+      const res = await API.get(`/admin/campaigns/${id}`);
       setSelectedCampaign(res.data);
     } catch (err) {
       setDetailError(
@@ -122,7 +122,7 @@ function AdminDashboard() {
   const handleAction = async (id, action) => {
     setActionError("");
     try {
-      await API.patch(`/campaigns/admin/${id}/${action}`);
+      await API.patch(`/admin/campaigns/${id}/${action}`);
       await Promise.all([fetchCampaigns(), fetchStats()]);
       if (selectedCampaignId === id) closeDetail();
     } catch (err) {
@@ -139,15 +139,18 @@ function AdminDashboard() {
       )}
       {statsError && <p className="admin-dashboard__error">{statsError}</p>}
       {stats && (
-        <div className="admin-dashboard__grid">
-          {Object.entries(STAT_LABELS).map(([key, label]) => (
-            <div key={key} className="admin-dashboard__card">
-              <p className="admin-dashboard__card-label">{label}</p>
-              <h3 className="admin-dashboard__card-value">
-                {formatValue(key, stats[key])}
-              </h3>
-            </div>
-          ))}
+        <div className="admin-dashboard__stats">
+          <h2 className="admin-dashboard__stats-title">Overview</h2>
+          <div className="admin-dashboard__grid">
+            {Object.entries(STAT_LABELS).map(([key, label]) => (
+              <div key={key} className="admin-dashboard__card">
+                <p className="admin-dashboard__card-label">{label}</p>
+                <h3 className="admin-dashboard__card-value">
+                  {formatValue(key, stats[key])}
+                </h3>
+              </div>
+            ))}
+          </div>
         </div>
       )}
 
