@@ -266,3 +266,36 @@
     align-items: flex-start;
   }
 }
+
+/* Tab buttons used in Analytics and other pages */
+.feature-tab-btn {
+  border: 1px solid rgba(0, 85, 204, 0.16);
+  border-radius: 999px;
+  padding: 0.4rem 1rem;
+  background: rgba(255, 255, 255, 0.82);
+  color: var(--text-secondary);
+  font-family: var(--font-heading);
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  text-transform: capitalize;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.feature-tab-btn.active,
+.feature-tab-btn:hover {
+  background: var(--accent-blue);
+  color: #fff;
+  border-color: var(--accent-blue);
+}
+
+/* Error state */
+.feature-error-box {
+  padding: 0.85rem 1rem;
+  border-radius: 14px;
+  background: rgba(178, 41, 75, 0.08);
+  border: 1px solid rgba(178, 41, 75, 0.2);
+  color: #9d2040;
+  font-weight: 600;
+  margin-bottom: 1rem;
+}

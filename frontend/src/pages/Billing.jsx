@@ -46,7 +46,7 @@ function Billing() {
           headers: { Authorization: `Bearer ${token}` },
         });
 
-        setCampaigns(response.data);
+        setCampaigns(response.data.items || []);
       } catch (requestError) {
         if (requestError.response?.status === 401) {
           localStorage.removeItem("token");

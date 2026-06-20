@@ -75,7 +75,9 @@ const buildDashboardOverview = async (userId, range) => {
     healthScore: Number((entry.healthScore / entry.samples).toFixed(1)),
   }));
 
-  const activeCampaigns = campaigns.filter((campaign) => ["active", "public"].includes(campaign.status)).length;
+  const activeCampaigns = campaigns.filter((campaign) =>
+    ["active", "public", "scheduled"].includes(campaign.status),
+  ).length;
   const averageHealth = campaigns.length
     ? Number(
         (

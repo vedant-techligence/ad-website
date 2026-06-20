@@ -6,9 +6,12 @@ const NAV_LINKS = [
   { label: "DASHBOARD", to: "/dashboard" },
   { label: "CAMPAIGNS", to: "/campaigns" },
   { label: "ANALYTICS", to: "/analytics" },
+  { label: "COMPARE", to: "/compare" },
   { label: "REPORTS", to: "/reports" },
   { label: "NOTIFICATIONS", to: "/notifications" },
   { label: "GEO", to: "/geo" },
+  { label: "BILLING", to: "/billing" },
+  { label: "AI INTEGRATIONS", to: "/integrations" },
 ];
 
 function Navbar() {

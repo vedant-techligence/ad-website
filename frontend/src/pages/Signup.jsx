@@ -2,7 +2,6 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import api from "../api/axios";
-import { useAuth } from "../context/AuthContext";
 import "./Signup.css";
 
 function Signup() {
@@ -12,7 +11,6 @@ function Signup() {
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const navigate = useNavigate();
-  const { setSession } = useAuth();
 
   const handleSubmit = async (event) => {
     event.preventDefault();
@@ -20,10 +18,9 @@ function Signup() {
     setSubmitting(true);
 
     try {
-      const response = await api.post("/auth/register", { name, email, password });
-      setSession(response.data.token, response.data.user);
-      toast.success("Account created.");
-      navigate("/onboarding");
+      await api.post("/auth/register", { name, email, password });
+      toast.success("Account created. Please log in.");
+      navigate("/login");
     } catch (requestError) {
       setError(requestError.response?.data?.message || "Something went wrong.");
     } finally {

@@ -15,6 +15,9 @@ import Analytics from "./pages/Analytics";
 import Reports from "./pages/Reports";
 import Notifications from "./pages/Notifications";
 import Geo from "./pages/Geo";
+import Billing from "./pages/Billing";
+import Integrations from "./pages/Integrations";
+import CompareCampaigns from "./pages/CompareCampaigns";
 
 function ScrollToTop() {
   const { pathname } = useLocation();
@@ -51,10 +54,10 @@ function ProtectedRoute({ allowIncompleteProfile = false, children }) {
     return <Navigate to="/login" replace />;
   }
 
-  if (!allowIncompleteProfile && user && !user.isProfileComplete) {
-    return <Navigate to="/onboarding" replace />;
-  }
-
+  // By passing the onboarding check to allow viewing all features without completing setup
+  // if (!allowIncompleteProfile && user && !user.isProfileComplete) {
+  //   return <Navigate to="/onboarding" replace />;
+  // }
   if (allowIncompleteProfile && user?.isProfileComplete) {
     return <Navigate to="/dashboard" replace />;
   }
@@ -73,10 +76,9 @@ function HomeRedirect() {
     return <Navigate to="/login" replace />;
   }
 
-  if (!user?.isProfileComplete) {
-    return <Navigate to="/onboarding" replace />;
-  }
-
+  // if (!user?.isProfileComplete) {
+  //   return <Navigate to="/onboarding" replace />;
+  // }
   return <Navigate to="/dashboard" replace />;
 }
 
@@ -156,6 +158,30 @@ function AppRoutes() {
           element={(
             <ProtectedRoute>
               <Geo />
+            </ProtectedRoute>
+          )}
+        />
+        <Route
+          path="/compare"
+          element={(
+            <ProtectedRoute>
+              <CompareCampaigns />
+            </ProtectedRoute>
+          )}
+        />
+        <Route
+          path="/billing"
+          element={(
+            <ProtectedRoute>
+              <Billing />
+            </ProtectedRoute>
+          )}
+        />
+        <Route
+          path="/integrations"
+          element={(
+            <ProtectedRoute>
+              <Integrations />
             </ProtectedRoute>
           )}
         />

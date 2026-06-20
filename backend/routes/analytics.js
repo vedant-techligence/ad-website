@@ -1,6 +1,5 @@
 const express = require("express");
 const { authMiddleware } = require("../middleware/auth");
-const { getOverview, getGeoAnalytics } = require("../controllers/dashboardController");
 const {
   getSentimentAnalytics,
   getHealthScoreAnalytics,
@@ -8,8 +7,6 @@ const {
 
 const router = express.Router();
 
-router.get("/overview", authMiddleware, getOverview);
-router.get("/geo", authMiddleware, getGeoAnalytics);
 router.get("/sentiment", authMiddleware, getSentimentAnalytics);
 router.get("/health-scores", authMiddleware, getHealthScoreAnalytics);
 

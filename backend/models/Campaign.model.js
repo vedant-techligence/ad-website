@@ -37,7 +37,7 @@ const mediaAssetSchema = new mongoose.Schema(
       default: "upload",
     },
     sourceUrl: {
-      type: String, // original link, if imported rather than directly uploaded
+      type: String,
       default: null,
     },
   },
@@ -86,8 +86,6 @@ const campaignSchema = new mongoose.Schema(
       ref: "User",
       required: true,
     },
-
-    // ---- Ad content (what the ad says / where it physically shows) ----
     title: {
       type: String,
       required: true,
@@ -131,15 +129,7 @@ const campaignSchema = new mongoose.Schema(
     mediaAssets: {
       type: [mediaAssetSchema],
       default: [],
-      validate: {
-        validator: function (assets) {
-          return assets.some((a) => a.kind === "video");
-        },
-        message: "At least one video file is required per campaign.",
-      },
     },
-
-    // ---- Targeting ( who sees the ad) ----
     targeting: {
       locations: [{ type: String }],
       ageRange: {
@@ -152,9 +142,10 @@ const campaignSchema = new mongoose.Schema(
         enum: ["all", "male", "female", "other"],
         default: "all",
       },
+      audienceSegments: { type: [String], default: [] },
+      regions: { type: [String], default: [] },
+      devices: { type: [String], default: [] },
     },
-
-    // ---- Schedule & frequency (  how long / how often) ----
     startDate: {
       type: Date,
       required: true,
@@ -164,7 +155,7 @@ const campaignSchema = new mongoose.Schema(
       required: true,
     },
     repeatRate: {
-      type: Number, // max times a single user sees this ad per day
+      type: Number,
       required: true,
       min: 1,
       max: 20,
@@ -175,43 +166,35 @@ const campaignSchema = new mongoose.Schema(
       required: true,
       min: 0,
     },
-
-    // ---- Pricing  ----
     estimatedCost: {
       type: Number,
       default: 0,
     },
-
-    // ---- Verification (now optional/pending-aware) ----
     verification: {
       type: verificationSchema,
       default: () => ({}),
     },
-
-    // ---- Lifecycle — expanded to include payment + verification states ----
     status: {
       type: String,
-<<<<<<< Updated upstream:backend/models/Campaign.model.js
       enum: [
-        "draft", // created, not yet submitted for payment
-        "pending_payment", // payment initiated, awaiting confirmation
-        "paid_pending_verification", // paid, waiting on content moderation
-        "public", // verified + live (kept friend's naming instead of "active")
-        "rejected", // failed verification
-        "completed", // ran its full duration
-        "cancelled", // advertiser cancelled
+        "draft",
+        "pending_payment",
+        "paid_pending_verification",
+        "public",
+        "rejected",
+        "completed",
+        "cancelled",
+        "scheduled",
+        "active",
+        "paused",
       ],
       default: "draft",
       index: true,
-=======
-      enum: ["draft", "scheduled", "active", "paused", "completed", "rejected", "public"],
-      default: "active",
     },
     publicationStatus: {
       type: String,
       enum: ["public", "blocked", "scheduled"],
-      default: "public",
->>>>>>> Stashed changes:backend/models/Campaign.js
+      default: "blocked",
     },
     isPublic: {
       type: Boolean,
@@ -224,16 +207,11 @@ const campaignSchema = new mongoose.Schema(
     budget: {
       allocated: { type: Number, default: 0 },
       spent: { type: Number, default: 0 },
-      currency: { type: String, default: "USD" },
+      currency: { type: String, default: "INR" },
     },
     schedule: {
       startDate: { type: Date, default: null },
       endDate: { type: Date, default: null },
-    },
-    targeting: {
-      audienceSegments: { type: [String], default: [] },
-      regions: { type: [String], default: [] },
-      devices: { type: [String], default: [] },
     },
     channels: {
       type: [String],
@@ -274,10 +252,18 @@ const campaignSchema = new mongoose.Schema(
 
 campaignSchema.index({ owner: 1, status: 1 });
 
-// endDate must be after startDate
-campaignSchema.pre("validate", function (next) {
+campaignSchema.pre("validate", function validateDates() {
   if (this.startDate && this.endDate && this.endDate <= this.startDate) {
-    return next(new Error("endDate must be after startDate"));
+    this.invalidate("endDate", "endDate must be after startDate");
+    return;
+  }
+
+  if (!this.schedule?.startDate && this.startDate) {
+    this.schedule = {
+      ...this.schedule,
+      startDate: this.startDate,
+      endDate: this.endDate,
+    };
   }
 });
 

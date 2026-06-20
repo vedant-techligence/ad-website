@@ -50,8 +50,29 @@ const markAllAsRead = asyncHandler(async (req, res) => {
   res.status(200).json({ message: "All notifications marked as read." });
 });
 
+const createNotification = asyncHandler(async (req, res) => {
+  const { title, message, type, severity, ctaLabel, ctaUrl } = req.body;
+
+  if (!title || !message) {
+    throw new ApiError(400, "Title and message are required.");
+  }
+
+  const item = await Notification.create({
+    owner: req.user.userId,
+    title,
+    message,
+    type: type || "system",
+    severity: severity || "info",
+    ctaLabel: ctaLabel || "",
+    ctaUrl: ctaUrl || "",
+  });
+
+  res.status(201).json({ item });
+});
+
 module.exports = {
   listNotifications,
   markAsRead,
   markAllAsRead,
+  createNotification,
 };

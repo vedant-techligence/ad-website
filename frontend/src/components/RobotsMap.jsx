@@ -2,7 +2,10 @@ import { CircleMarker, MapContainer, Popup, TileLayer } from "react-leaflet";
 
 function RobotsMap({ robots }) {
   const center = robots.length
-    ? [robots[0].currentLocation.lat, robots[0].currentLocation.lng]
+    ? [
+        robots[0].currentLocation?.lat ?? 28.6139,
+        robots[0].currentLocation?.lng ?? 77.209,
+      ]
     : [28.6139, 77.209];
 
   return (
@@ -15,7 +18,10 @@ function RobotsMap({ robots }) {
         {robots.map((robot) => (
           <CircleMarker
             key={robot.id}
-            center={[robot.currentLocation.lat, robot.currentLocation.lng]}
+            center={[
+              robot.currentLocation?.lat ?? 28.6139,
+              robot.currentLocation?.lng ?? 77.209,
+            ]}
             pathOptions={{
               color: robot.status === "active" ? "#0f766e" : robot.status === "charging" ? "#f97316" : "#475569",
               fillColor: robot.status === "active" ? "#14b8a6" : robot.status === "charging" ? "#fb923c" : "#64748b",

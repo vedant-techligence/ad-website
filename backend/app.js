@@ -8,7 +8,9 @@ const path = require("path");
 
 const authRoutes = require("./routes/auth");
 const campaignRoutes = require("./routes/campaigns");
+const robotRoutes = require("./routes/robots");
 const dashboardRoutes = require("./routes/dashboard");
+const analyticsRoutes = require("./routes/analytics");
 const reportRoutes = require("./routes/reports");
 const notificationRoutes = require("./routes/notifications");
 const integrationRoutes = require("./routes/integrations");
@@ -18,7 +20,18 @@ const { errorHandler } = require("./middleware/errorHandler");
 const allowedOrigins = [
   process.env.FRONTEND_URL,
   "http://localhost:5173",
+  "http://localhost:5174",
+  "http://localhost:5175",
+  "http://localhost:5176",
+  "http://localhost:5177",
+  "http://localhost:5178",
+  "http://localhost:5179",
+  "http://localhost:5180",
   "http://127.0.0.1:5173",
+  "http://127.0.0.1:5174",
+  "http://127.0.0.1:5175",
+  "http://localhost:4173",
+  "http://127.0.0.1:4173",
 ].filter(Boolean);
 
 const sanitizeValue = (value) => {
@@ -99,7 +112,9 @@ app.get("/api/health", (_req, res) => {
 
 app.use("/api/auth", authRoutes);
 app.use("/api/campaigns", campaignRoutes);
+app.use("/api/robots", robotRoutes);
 app.use("/api/dashboard", dashboardRoutes);
+app.use("/api/analytics", analyticsRoutes);
 app.use("/api/reports", reportRoutes);
 app.use("/api/notifications", notificationRoutes);
 app.use("/api/integrations", integrationRoutes);

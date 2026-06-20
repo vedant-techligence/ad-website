@@ -111,8 +111,15 @@ function Campaigns() {
       callToAction: campaign.callToAction || "",
       spokenWords: campaign.spokenWords || "",
       slideText: campaign.slideText || "",
+      startDate: campaign.startDate ? campaign.startDate.slice(0, 10) : "",
+      endDate: campaign.endDate ? campaign.endDate.slice(0, 10) : "",
+      repeatRate: campaign.repeatRate || 3,
+      dailyBudgetCap: campaign.dailyBudgetCap ?? "",
     });
     setFiles([]);
+    setImportedAssets([]);
+    setDriveUrl("");
+    setDriveError("");
     setError("");
     setSuccess("");
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -150,10 +157,9 @@ function Campaigns() {
     setImportingDrive(true);
 
     try {
-      const response = await API.post(
+      const response = await api.post(
         "/campaigns/import-drive-video",
         { driveUrl: driveUrl.trim() },
-        { headers: { Authorization: `Bearer ${token}` } },
       );
 
       setImportedAssets((current) => [...current, response.data.mediaAsset]);
@@ -471,6 +477,39 @@ function Campaigns() {
               ))}
             </div>
           )}
+
+          {/* Google Drive import */}
+          <div className="campaigns-drive-import">
+            <p className="campaigns-section-label">Import from Google Drive</p>
+            <div className="campaigns-drive-row">
+              <input
+                type="url"
+                placeholder="Paste a Google Drive share link…"
+                value={driveUrl}
+                onChange={(e) => setDriveUrl(e.target.value)}
+              />
+              <button
+                type="button"
+                className="campaigns-drive-import-btn"
+                onClick={handleImportFromDrive}
+                disabled={importingDrive}
+              >
+                {importingDrive ? "Importing…" : "Import"}
+              </button>
+            </div>
+            {driveError && <span className="campaigns-drive-hint" style={{ color: "var(--danger)" }}>{driveError}</span>}
+            <span className="campaigns-drive-hint">Paste a shared "Anyone with the link" Drive video URL.</span>
+            {!!importedAssets.length && (
+              <div className="campaigns-selected-files" style={{ marginTop: "0.6rem" }}>
+                {importedAssets.map((asset) => (
+                  <span key={asset.storedName} className="campaigns-drive-chip">
+                    🎬 {asset.originalName}
+                    <button type="button" onClick={() => removeImportedAsset(asset.storedName)}>✕</button>
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
 
           <button
             className="campaigns-submit"

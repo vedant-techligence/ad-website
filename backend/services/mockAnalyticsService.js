@@ -3,7 +3,7 @@ const AnalyticsSnapshot = require("../models/AnalyticsSnapshot");
 const Notification = require("../models/Notification");
 const Report = require("../models/Report");
 const Robot = require("../models/Robot");
-const { verifyCampaign } = require("./campaignVerification");
+const { buildDemoMediaAssets } = require("../utils/demoMedia");
 
 const campaignBlueprints = [
   {
@@ -188,10 +188,19 @@ const createDemoCampaigns = async (user) => {
       checksSummary: "Demo campaign approved with generated placeholder verification for dashboard bootstrapping.",
     };
 
+    const startDate = new Date(Date.now() - 1000 * 60 * 60 * 24 * (12 - index * 2));
+    const endDate = new Date(Date.now() + 1000 * 60 * 60 * 24 * (18 + index * 5));
+
     const campaign = await Campaign.create({
       owner: user._id,
       ...blueprint,
       destinationUrl: `https://techligence.in/demo/${index + 1}`,
+      mediaAssets: buildDemoMediaAssets(index),
+      startDate,
+      endDate,
+      repeatRate: 3 + index,
+      dailyBudgetCap: 500 + index * 150,
+      estimatedCost: 8500 + index * 2200,
       verification,
       status: index === 2 ? "scheduled" : "active",
       publicationStatus: "public",
@@ -200,11 +209,11 @@ const createDemoCampaigns = async (user) => {
       budget: {
         allocated: 12000 + index * 3500,
         spent: 0,
-        currency: "USD",
+        currency: "INR",
       },
       schedule: {
-        startDate: new Date(Date.now() - 1000 * 60 * 60 * 24 * (12 - index * 2)),
-        endDate: new Date(Date.now() + 1000 * 60 * 60 * 24 * (18 + index * 5)),
+        startDate,
+        endDate,
       },
       targeting: {
         audienceSegments: ["Commuters", "Shoppers", "Operators"].slice(0, 2 + (index % 2)),

@@ -1,3 +1,4 @@
+const crypto = require("crypto");
 const mongoose = require("mongoose");
 const path = require("path");
 
@@ -6,6 +7,7 @@ const AnalyticsSnapshot = require("../models/AnalyticsSnapshot");
 const { ApiError } = require("../utils/ApiError");
 const { asyncHandler } = require("../utils/asyncHandler");
 const { getPagination } = require("../utils/pagination");
+const { calculateCampaignEstimate } = require("../utils/campaignPricing");
 const {
   verifyCampaign,
   mapMediaAssets,
@@ -30,6 +32,11 @@ const campaignSelect = [
   "publicationStatus",
   "isPublic",
   "publishedAt",
+  "startDate",
+  "endDate",
+  "repeatRate",
+  "dailyBudgetCap",
+  "estimatedCost",
   "budget",
   "schedule",
   "healthScore",
@@ -45,62 +52,73 @@ const campaignSelect = [
   "updatedAt",
 ];
 
-const buildCampaignPayload = (body) => ({
-  title: body.title,
-  brandName: body.brandName,
-  robotPlacement: body.robotPlacement,
-  destinationUrl: body.destinationUrl || "",
-  description: body.description,
-  callToAction: body.callToAction || "",
-  spokenWords: body.spokenWords || "",
-  slideText: body.slideText || "",
-  status: body.status || "active",
-  publicationStatus: body.publicationStatus || "public",
-  budget: {
-    allocated: Number(body.budgetAllocated || body?.budget?.allocated || 0),
-    spent: Number(body.budgetSpent || body?.budget?.spent || 0),
-    currency: body.budgetCurrency || body?.budget?.currency || "USD",
-  },
-  schedule: {
-    startDate: body.startDate || body?.schedule?.startDate || null,
-    endDate: body.endDate || body?.schedule?.endDate || null,
-  },
-  targeting: {
-    audienceSegments: String(body.audienceSegments || "")
-      .split(",")
-      .map((entry) => entry.trim())
-      .filter(Boolean),
-    regions: String(body.regions || "")
-      .split(",")
-      .map((entry) => entry.trim())
-      .filter(Boolean),
-    devices: String(body.devices || "")
-      .split(",")
-      .map((entry) => entry.trim())
-      .filter(Boolean),
-  },
-  channels: String(body.channels || "Robot Display, Interactive Kiosk")
+const uploadsRoot = path.join(__dirname, "..", "uploads");
+
+const sanitizeText = (value) =>
+  String(value || "")
+    .replace(/<[^>]*>/g, "")
+    .trim();
+
+const toArray = (value) => {
+  if (!value) {
+    return [];
+  }
+
+  if (Array.isArray(value)) {
+    return value;
+  }
+
+  return String(value)
     .split(",")
     .map((entry) => entry.trim())
-    .filter(Boolean),
-  tags: String(body.tags || "")
-    .split(",")
-    .map((entry) => entry.trim())
-    .filter(Boolean),
-  location: {
-    city: body.city || "",
-    venue: body.venue || "",
-    lat: body.lat !== undefined && body.lat !== "" ? Number(body.lat) : 28.6139,
-    lng: body.lng !== undefined && body.lng !== "" ? Number(body.lng) : 77.209,
-  },
-  performanceGoals: {
-    impressions: Number(body.goalImpressions || 100000),
-    conversions: Number(body.goalConversions || 1500),
-    engagementRate: Number(body.goalEngagementRate || 6.5),
-  },
+    .filter(Boolean);
+};
+
+const parseImportedMediaAssets = (rawValue) => {
+  if (!rawValue) {
+    return [];
+  }
+
+  try {
+    const parsed = typeof rawValue === "string" ? JSON.parse(rawValue) : rawValue;
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    throw new ApiError(400, "importedMediaAssets must be valid JSON.");
+  }
+};
+
+const normalizeImportedAsset = (asset) => ({
+  originalName: asset.originalName || "imported-asset.mp4",
+  storedName: asset.storedName || `imported-${crypto.randomUUID()}.mp4`,
+  mimeType: asset.mimeType || "video/mp4",
+  size: Number(asset.size) || 0,
+  kind: asset.kind || "video",
+  relativePath: asset.relativePath || `campaigns/imports/${asset.storedName || "imported-asset.mp4"}`,
+  publicUrl: asset.publicUrl || `/uploads/campaigns/imports/${asset.storedName || "imported-asset.mp4"}`,
+  source: asset.source || "google_drive",
+  sourceUrl: asset.sourceUrl || null,
 });
 
-const uploadsRoot = path.join(__dirname, "..", "uploads");
+const buildTargeting = (body) => ({
+  locations: toArray(body.locations),
+  ageRange: {
+    min: Number(body.ageMin) || 18,
+    max: Number(body.ageMax) || 65,
+  },
+  interests: toArray(body.interests),
+  gender: body.gender || "all",
+  audienceSegments: toArray(body.audienceSegments),
+  regions: toArray(body.regions),
+  devices: toArray(body.devices),
+});
+
+const assertHasVideo = (mediaAssets) => {
+  if (!mediaAssets.some((asset) => asset.kind === "video")) {
+    throw new ApiError(400, "At least one video file is required per campaign.");
+  }
+};
+
+const shouldSeedAnalytics = (status) => ["active", "public", "completed", "scheduled"].includes(status);
 
 const listCampaigns = asyncHandler(async (req, res) => {
   const { page, limit, skip } = getPagination(req.query);
@@ -151,32 +169,102 @@ const createCampaign = asyncHandler(async (req, res) => {
   const uploadedFiles = req.files || [];
 
   try {
-    const payload = buildCampaignPayload(req.body);
-    const mediaAssets = mapMediaAssets(uploadedFiles);
-    const verification = verifyCampaign({ ...payload, mediaAssets });
+    const {
+      title,
+      brandName,
+      robotPlacement,
+      destinationUrl,
+      description,
+      callToAction,
+      spokenWords,
+      slideText,
+      startDate,
+      endDate,
+      repeatRate,
+      dailyBudgetCap,
+    } = req.body;
+
+    if (
+      !title ||
+      !brandName ||
+      !robotPlacement ||
+      !description ||
+      !startDate ||
+      !endDate ||
+      !repeatRate ||
+      dailyBudgetCap === undefined ||
+      dailyBudgetCap === ""
+    ) {
+      throw new ApiError(400, "Please complete all required campaign fields.");
+    }
+
+    const importedAssets = parseImportedMediaAssets(req.body.importedMediaAssets).map(normalizeImportedAsset);
+    const mediaAssets = [...mapMediaAssets(uploadedFiles), ...importedAssets];
+
+    if (!mediaAssets.length) {
+      throw new ApiError(400, "At least one media file (video) is required.");
+    }
+
+    assertHasVideo(mediaAssets);
+
+    const parsedStartDate = new Date(startDate);
+    const parsedEndDate = new Date(endDate);
+
+    if (parsedEndDate <= parsedStartDate) {
+      throw new ApiError(400, "End date must be after the start date.");
+    }
+
+    const { breakdown } = calculateCampaignEstimate({
+      startDate,
+      endDate,
+      repeatRate: Number(repeatRate),
+      dailyBudgetCap: Number(dailyBudgetCap),
+    });
 
     const campaign = await Campaign.create({
       owner: req.user.userId,
-      ...payload,
+      title: sanitizeText(title),
+      brandName: sanitizeText(brandName),
+      robotPlacement: sanitizeText(robotPlacement),
+      destinationUrl: sanitizeText(destinationUrl),
+      description: sanitizeText(description),
+      callToAction: sanitizeText(callToAction),
+      spokenWords: sanitizeText(spokenWords),
+      slideText: sanitizeText(slideText),
       mediaAssets,
-      verification,
-      isPublic: verification.status === "approved",
-      publishedAt: verification.status === "approved" ? verification.approvedAt : null,
-      publicationStatus: verification.status === "approved" ? "public" : "blocked",
-      status: payload.status || (verification.status === "approved" ? "active" : "rejected"),
-      sentimentSummary: {
-        positive: 62,
-        neutral: 24,
-        negative: 14,
-        score: 68,
+      targeting: buildTargeting(req.body),
+      startDate: parsedStartDate,
+      endDate: parsedEndDate,
+      repeatRate: Number(repeatRate),
+      dailyBudgetCap: Number(dailyBudgetCap),
+      estimatedCost: breakdown.estimatedCost,
+      schedule: {
+        startDate: parsedStartDate,
+        endDate: parsedEndDate,
       },
-      generatedInsights: [],
+      channels: toArray(req.body.channels || "Robot Display, Interactive Kiosk"),
+      tags: toArray(req.body.tags),
+      location: {
+        city: sanitizeText(req.body.city),
+        venue: sanitizeText(req.body.venue),
+        lat: req.body.lat !== undefined && req.body.lat !== "" ? Number(req.body.lat) : 28.6139,
+        lng: req.body.lng !== undefined && req.body.lng !== "" ? Number(req.body.lng) : 77.209,
+      },
+      status: "draft",
+      isPublic: false,
+      publishedAt: null,
+      verification: {
+        status: "pending",
+        riskLevel: "low",
+        checkedAt: null,
+        approvedAt: null,
+        flaggedTerms: [],
+        issues: [],
+        checksSummary: "Draft saved. Verification runs after payment.",
+      },
     });
 
-    await ensureCampaignAnalyticsSeeded(campaign);
-    const refreshedCampaign = await syncCampaignDerivedMetrics(campaign._id);
-
-    res.status(201).json({ item: refreshedCampaign });
+    res.status(201).json(campaign);
   } catch (error) {
     cleanupUploadedFiles(uploadedFiles);
     throw error;
@@ -195,29 +283,99 @@ const updateCampaign = asyncHandler(async (req, res) => {
     throw new ApiError(404, "Campaign not found.");
   }
 
-  const payload = buildCampaignPayload({ ...campaign.toObject(), ...req.body });
-  const appendedAssets = [...campaign.mediaAssets, ...mapMediaAssets(uploadedFiles)];
-  const verification = verifyCampaign({ ...payload, mediaAssets: appendedAssets });
+  try {
+    const importedAssets = parseImportedMediaAssets(req.body.importedMediaAssets).map(normalizeImportedAsset);
+    const appendedAssets = [...campaign.mediaAssets, ...mapMediaAssets(uploadedFiles), ...importedAssets];
 
-  campaign.set({
-    ...payload,
-    mediaAssets: appendedAssets,
-    verification,
-    publicationStatus: verification.status === "approved" ? "public" : "blocked",
-    isPublic: verification.status === "approved",
-    publishedAt: verification.status === "approved" ? verification.approvedAt : null,
-    status:
-      req.body.status ||
-      (verification.status === "approved" && campaign.status === "rejected"
-        ? "active"
-        : campaign.status),
-  });
+    if (!appendedAssets.length) {
+      throw new ApiError(400, "Campaign must retain at least one media asset.");
+    }
 
-  await campaign.save();
-  await ensureCampaignAnalyticsSeeded(campaign);
-  const refreshedCampaign = await syncCampaignDerivedMetrics(campaign._id);
+    assertHasVideo(appendedAssets);
 
-  res.status(200).json({ item: refreshedCampaign });
+    const nextTitle = req.body.title !== undefined ? sanitizeText(req.body.title) : campaign.title;
+    const nextBrandName = req.body.brandName !== undefined ? sanitizeText(req.body.brandName) : campaign.brandName;
+    const nextPlacement =
+      req.body.robotPlacement !== undefined ? sanitizeText(req.body.robotPlacement) : campaign.robotPlacement;
+    const nextDescription =
+      req.body.description !== undefined ? sanitizeText(req.body.description) : campaign.description;
+
+    campaign.set({
+      title: nextTitle,
+      brandName: nextBrandName,
+      robotPlacement: nextPlacement,
+      destinationUrl:
+        req.body.destinationUrl !== undefined ? sanitizeText(req.body.destinationUrl) : campaign.destinationUrl,
+      description: nextDescription,
+      callToAction: req.body.callToAction !== undefined ? sanitizeText(req.body.callToAction) : campaign.callToAction,
+      spokenWords: req.body.spokenWords !== undefined ? sanitizeText(req.body.spokenWords) : campaign.spokenWords,
+      slideText: req.body.slideText !== undefined ? sanitizeText(req.body.slideText) : campaign.slideText,
+      mediaAssets: appendedAssets,
+    });
+
+    if (req.body.startDate) {
+      campaign.startDate = new Date(req.body.startDate);
+      campaign.schedule.startDate = campaign.startDate;
+    }
+
+    if (req.body.endDate) {
+      campaign.endDate = new Date(req.body.endDate);
+      campaign.schedule.endDate = campaign.endDate;
+    }
+
+    if (req.body.repeatRate !== undefined && req.body.repeatRate !== "") {
+      campaign.repeatRate = Number(req.body.repeatRate);
+    }
+
+    if (req.body.dailyBudgetCap !== undefined && req.body.dailyBudgetCap !== "") {
+      campaign.dailyBudgetCap = Number(req.body.dailyBudgetCap);
+    }
+
+    if (campaign.startDate && campaign.endDate && campaign.endDate <= campaign.startDate) {
+      throw new ApiError(400, "End date must be after the start date.");
+    }
+
+    if (["draft", "pending_payment"].includes(campaign.status)) {
+      campaign.verification = {
+        status: "pending",
+        riskLevel: "low",
+        checkedAt: null,
+        approvedAt: null,
+        flaggedTerms: [],
+        issues: [],
+        checksSummary: "Draft updated. Verification runs after payment.",
+      };
+    } else {
+      const verification = verifyCampaign({
+        title: campaign.title,
+        brandName: campaign.brandName,
+        robotPlacement: campaign.robotPlacement,
+        destinationUrl: campaign.destinationUrl,
+        description: campaign.description,
+        callToAction: campaign.callToAction,
+        spokenWords: campaign.spokenWords,
+        slideText: campaign.slideText,
+        mediaAssets: campaign.mediaAssets,
+      });
+
+      campaign.verification = verification;
+      campaign.isPublic = verification.status === "approved";
+      campaign.publicationStatus = verification.status === "approved" ? "public" : "blocked";
+      campaign.publishedAt = verification.status === "approved" ? verification.approvedAt : null;
+    }
+
+    await campaign.save();
+
+    if (shouldSeedAnalytics(campaign.status)) {
+      await ensureCampaignAnalyticsSeeded(campaign);
+      await syncCampaignDerivedMetrics(campaign._id);
+    }
+
+    res.status(200).json(campaign);
+  } catch (error) {
+    cleanupUploadedFiles(uploadedFiles);
+    throw error;
+  }
 });
 
 const deleteCampaign = asyncHandler(async (req, res) => {
@@ -230,9 +388,7 @@ const deleteCampaign = asyncHandler(async (req, res) => {
     throw new ApiError(404, "Campaign not found.");
   }
 
-  await Promise.all([
-    AnalyticsSnapshot.deleteMany({ campaign: campaign._id }),
-  ]);
+  await AnalyticsSnapshot.deleteMany({ campaign: campaign._id });
 
   cleanupUploadedFiles(
     (campaign.mediaAssets || []).map((asset) => ({
@@ -252,6 +408,71 @@ const getPublicCampaigns = asyncHandler(async (_req, res) => {
   res.status(200).json({ items });
 });
 
+const estimateCampaign = asyncHandler(async (req, res) => {
+  const campaign = await Campaign.findOne({
+    _id: req.params.id,
+    owner: req.user.userId,
+  });
+
+  if (!campaign) {
+    throw new ApiError(404, "Campaign not found.");
+  }
+
+  if (!campaign.startDate || !campaign.endDate || !campaign.repeatRate) {
+    throw new ApiError(400, "Campaign is missing startDate, endDate, or repeatRate.");
+  }
+
+  const { durationDays, breakdown, avgDailyCost, budgetWarning } = calculateCampaignEstimate({
+    startDate: campaign.startDate,
+    endDate: campaign.endDate,
+    repeatRate: campaign.repeatRate,
+    dailyBudgetCap: campaign.dailyBudgetCap,
+  });
+
+  campaign.estimatedCost = breakdown.estimatedCost;
+  await campaign.save();
+
+  res.status(200).json({
+    campaignId: campaign._id,
+    durationDays,
+    repeatRate: campaign.repeatRate,
+    breakdown,
+    avgDailyCost,
+    dailyBudgetCap: campaign.dailyBudgetCap,
+    budgetWarning,
+  });
+});
+
+const importDriveVideo = asyncHandler(async (req, res) => {
+  const driveUrl = sanitizeText(req.body.driveUrl);
+
+  if (!driveUrl) {
+    throw new ApiError(400, "Paste a Google Drive share link first.");
+  }
+
+  if (!/^https?:\/\//i.test(driveUrl)) {
+    throw new ApiError(400, "Drive URL must start with http:// or https://.");
+  }
+
+  const storedName = `drive-${Date.now()}-${crypto.randomUUID().slice(0, 8)}.mp4`;
+
+  res.status(200).json({
+    mediaAsset: {
+      originalName: "google-drive-import.mp4",
+      storedName,
+      mimeType: "video/mp4",
+      size: 1024 * 1024 * 4,
+      kind: "video",
+      relativePath: `campaigns/imports/${storedName}`,
+      publicUrl: "https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4",
+      source: "google_drive",
+      sourceUrl: driveUrl,
+    },
+    mode: "mock",
+    integrationNote: "Google Drive import is mocked until cloud storage ingestion is connected.",
+  });
+});
+
 const getCampaignHealth = asyncHandler(async (req, res) => {
   const campaign = await Campaign.findOne({
     _id: req.params.id,
@@ -263,8 +484,8 @@ const getCampaignHealth = asyncHandler(async (req, res) => {
   }
 
   const snapshots = await AnalyticsSnapshot.find({ campaign: campaign._id }).sort({ date: -1 }).limit(14);
-
   const latest = snapshots[0];
+
   res.status(200).json({
     item: {
       campaignId: campaign._id,
@@ -318,6 +539,8 @@ module.exports = {
   updateCampaign,
   deleteCampaign,
   getPublicCampaigns,
+  estimateCampaign,
+  importDriveVideo,
   getCampaignHealth,
   compareCampaigns,
 };
