@@ -9,6 +9,11 @@ const {
   mapMediaAssets,
   toArray,
 } = require("./campaigns.upload");
+const path = require("path");
+const fs = require("fs");
+const {transporter,} = require("../services/email.service");
+
+const User =require("../models/User");
 
 // NOTE: verifyCampaign is intentionally NOT called during creation anymore.
 // Verification now happens after payment, as a separate step (handled by the
@@ -218,4 +223,131 @@ router.post("/", authMiddleware, uploadCampaignFiles, async (req, res) => {
   }
 });
 
+// GET /api/campaigns/:id/report
+// Download campaign report (PDF)
+
+router.get(
+  "/:id/report",
+  async (req, res) => {
+    try {
+      const campaign =
+        await Campaign.findById(
+          req.params.id
+        );
+
+      if (!campaign) {
+        return res.status(404).json({
+          message:
+            "Campaign not found",
+        });
+      }
+
+      if (
+        !campaign.report?.pdfPath
+      ) {
+        return res.status(404).json({
+          message:
+            "Report not generated yet",
+        });
+      }
+
+      return res.download(
+        campaign.report.pdfPath
+      );
+    } catch (err) {
+      console.error(err);
+
+      res.status(500).json({
+        message:
+          "Server error",
+      });
+    }
+  }
+);
+
+// Post route for sending email
+router.post(
+  "/:id/report/email",
+  async (req, res) => {
+    try {
+      const campaign =
+        await Campaign.findById(
+          req.params.id
+        );
+
+      if (!campaign) {
+        return res.status(404).json({
+          message:
+            "Campaign not found",
+        });
+      }
+
+      if (
+        !campaign.report?.pdfPath
+      ) {
+        return res.status(404).json({
+          message:
+            "Report not generated yet",
+        });
+      }
+
+      const user =
+        await User.findById(
+          campaign.owner
+        );
+
+      if (!user) {
+        return res.status(404).json({
+          message:
+            "User not found",
+        });
+      }
+
+      await transporter.sendMail({
+        from:
+          process.env.EMAIL_USER,
+
+        to: user.email,
+
+        subject:
+          "Campaign Report",
+
+        text:
+          `Your campaign "${campaign.title}" report is attached.`,
+
+        attachments: [
+          {
+            filename:
+              "CampaignReport.pdf",
+
+            path:
+              campaign.report
+                .pdfPath,
+          },
+        ],
+      });
+
+      campaign.report
+        .lastEmailedAt =
+        new Date();
+
+      campaign.report
+        .emailCount += 1;
+
+      await campaign.save();
+
+      res.json({
+        message:
+          "Report emailed successfully",
+      });
+    } catch (err) {
+      console.error(err);
+
+      res.status(500).json({
+        message:
+          "Server error",
+      });
+    }
+  }
+);
 module.exports = router;

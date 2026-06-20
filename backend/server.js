@@ -1,3 +1,6 @@
+require("dotenv").config();
+console.log("JWT_SECRET:", process.env.JWT_SECRET);
+console.log("JWT_REFRESH_SECRET:", process.env.JWT_REFRESH_SECRET);
 const express = require("express");
 const cors = require("cors");
 const helmet = require("helmet");
@@ -5,14 +8,14 @@ const rateLimit = require("express-rate-limit");
 const hpp = require("hpp");
 const cookieParser = require("cookie-parser");
 const path = require("path");
-require("dotenv").config();
 
 const authRoutes = require("./routes/auth");
 const campaignRoutes = require("./routes/campaign.routes");
 const campaignAdminRoutes = require("./routes/campaigns.admin.routes");
 const usersAdminRoutes = require("./routes/adminUsers");
-
+const testRoutes =require("./routes/test.routes");
 const { connectDatabase } = require("./config/db");
+require("./jobs/cron");
 
 const app = express();
 
@@ -30,7 +33,7 @@ app.use(
 app.use(express.json({ limit: "10kb" }));
 app.use(cookieParser());
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
-
+app.use("/api/test", testRoutes);
 const sanitizeValue = (val) => {
   if (typeof val === "string") return val.replace(/<[^>]*>/g, "");
   if (typeof val === "object" && val !== null) {

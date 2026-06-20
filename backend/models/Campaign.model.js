@@ -212,6 +212,38 @@ const campaignSchema = new mongoose.Schema(
       type: Date,
       default: null,
     },
+    report: {
+      generatedAt: {
+        type: Date,
+        default: null,
+      },
+
+      pdfPath: {
+        type: String,
+        default: null,
+      },
+
+      lastEmailedAt: {
+        type: Date,
+        default: null,
+      },
+
+      emailCount: {
+        type: Number,
+        default: 0,
+      },
+    },
+    analytics: {
+      impressions: {
+        type: Number,
+        default: 0,
+      },
+
+      clicks: {
+        type: Number,
+        default: 0,
+      },
+    },
   },
   { timestamps: true },
 );

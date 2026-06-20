@@ -268,6 +268,21 @@ function Campaigns() {
     0,
   );
 
+  const downloadReport = (id) => {
+    window.open(`${API_ORIGIN}/api/campaigns/${id}/report`, "_blank");
+  };
+
+  const emailReport = async (id) => {
+    try {
+      await API.post(`/campaigns/${id}/report/email`);
+
+      alert("Report emailed successfully.");
+    } catch (err) {
+      console.error(err);
+      alert("Failed to send report.");
+    }
+  };
+
   return (
     <div className="campaigns-page">
       {resultModal && (
@@ -698,6 +713,27 @@ function Campaigns() {
                         )}
                       </div>
                     )}
+
+                    {campaign.status === "completed" &&
+                      campaign.report?.pdfPath && (
+                        <div className="campaign-report-actions">
+                          <button
+                            type="button"
+                            className="campaign-report-btn"
+                            onClick={() => downloadReport(campaign._id)}
+                          >
+                            Download Report
+                          </button>
+
+                          <button
+                            type="button"
+                            className="campaign-report-btn"
+                            onClick={() => emailReport(campaign._id)}
+                          >
+                            Email Report
+                          </button>
+                        </div>
+                      )}
                   </article>
                 );
               })}

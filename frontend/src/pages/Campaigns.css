@@ -628,3 +628,23 @@
     align-items: flex-start;
   }
 }
+
+.campaign-report-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.campaign-report-btn {
+  padding: 10px 16px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  background: #2563eb;
+  color: white;
+  font-weight: 600;
+}
+
+.campaign-report-btn:hover {
+  opacity: 0.9;
+}
