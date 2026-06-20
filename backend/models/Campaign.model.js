@@ -48,7 +48,7 @@ const verificationSchema = new mongoose.Schema(
   {
     status: {
       type: String,
-      enum: ["pending", "approved", "rejected"],
+      enum: ["pending", "pending_review", "approved", "rejected"],
       default: "pending",
     },
     riskLevel: {
@@ -131,12 +131,6 @@ const campaignSchema = new mongoose.Schema(
     mediaAssets: {
       type: [mediaAssetSchema],
       default: [],
-      validate: {
-        validator: function (assets) {
-          return assets.some((a) => a.kind === "video");
-        },
-        message: "At least one video file is required per campaign.",
-      },
     },
 
     // ---- Targeting ( who sees the ad) ----
@@ -192,14 +186,15 @@ const campaignSchema = new mongoose.Schema(
     status: {
       type: String,
       enum: [
-        "draft", // created, not yet submitted for payment
-        "pending_payment", // payment initiated, awaiting confirmation
-        "paid_pending_verification", // paid, waiting on content moderation
-        "public", // verified + live (kept friend's naming instead of "active")
-        "paused", // temporarily halted by advertiser (e.g. to update content or targeting)
-        "rejected", // failed verification
-        "completed", // ran its full duration
-        "cancelled", // advertiser cancelled
+        "draft",
+        "pending_review",
+        "pending_payment",
+        "paid_pending_verification",
+        "public",
+        "paused",
+        "rejected",
+        "completed",
+        "cancelled",
       ],
       default: "draft",
       index: true,

@@ -15,11 +15,7 @@ const {transporter,} = require("../services/email.service");
 
 const User =require("../models/User");
 
-// NOTE: verifyCampaign is intentionally NOT called during creation anymore.
-// Verification now happens after payment, as a separate step (handled by the
-// verification teammate's service / an internal endpoint). Keeping the import
-// here commented so it's easy to find when that endpoint gets built.
-// const { verifyCampaign } = require("../services/campaignVerification");
+const { verifyCampaign } = require("../services/campaignVerification");
 
 const router = express.Router();
 
@@ -155,20 +151,18 @@ router.post("/", authMiddleware, uploadCampaignFiles, async (req, res) => {
         .json({ message: "Please complete all required campaign fields." });
     }
 
-    if (files.length === 0) {
-      return res
-        .status(400)
-        .json({ message: "At least one media file (video) is required." });
-    }
-
     const mediaAssets = mapMediaAssets(files);
-
-    if (!mediaAssets.some((a) => a.kind === "video")) {
-      cleanupUploadedFiles(files);
-      return res
-        .status(400)
-        .json({ message: "At least one video file is required per campaign." });
-    }
+    const verification = verifyCampaign({
+      title: sanitizeText(title),
+      brandName: sanitizeText(brandName),
+      robotPlacement: sanitizeText(robotPlacement),
+      destinationUrl: sanitizeText(destinationUrl),
+      description: sanitizeText(description),
+      callToAction: sanitizeText(callToAction),
+      spokenWords: sanitizeText(spokenWords),
+      slideText: sanitizeText(slideText),
+      mediaAssets,
+    });
 
     const { breakdown } = calculateCampaignEstimate({
       startDate,
@@ -202,7 +196,8 @@ router.post("/", authMiddleware, uploadCampaignFiles, async (req, res) => {
       estimatedCost: breakdown.estimatedCost,
       // estimatedCost is locked in at creation — schedule/repeatRate/budget
       // cannot be edited after this point.
-      status: "draft",
+      verification,
+      status: verification.status === "rejected" ? "rejected" : "pending_review",
       isPublic: false,
       publishedAt: null,
     });

@@ -138,6 +138,10 @@
   transform: scale(1.02);
 }
 
+.admin-campaign-modal__media-item--clickable {
+  cursor: zoom-in;
+}
+
 .admin-campaign-modal__actions {
   position: sticky;
   bottom: -1.75rem;
@@ -181,6 +185,47 @@
 .admin-campaigns__no-action {
   color: var(--text-muted);
   font-size: 0.85rem;
+}
+
+.admin-campaign-modal__lightbox {
+  position: absolute;
+  inset: 0;
+  background: rgba(6, 19, 37, 0.75);
+  backdrop-filter: blur(2px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  z-index: 10;
+  padding: 2rem;
+}
+
+.admin-campaign-modal__lightbox-img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  border-radius: 8px;
+  box-shadow: 0 0 30px rgba(0, 0, 0, 0.4);
+}
+
+.admin-campaign-modal__lightbox-close {
+  position: absolute;
+  top: 14px;
+  right: 16px;
+  border: none;
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+  font-size: 1.5rem;
+  line-height: 1;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.admin-campaign-modal__lightbox-close:hover {
+  background: rgba(255, 255, 255, 0.25);
 }
 
 @media (max-width: 720px) {

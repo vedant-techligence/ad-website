@@ -12,6 +12,7 @@ import Onboarding from "./pages/Onboarding";
 import Dashboard from "./pages/Dashboard";
 import Campaigns from "./pages/Campaigns";
 import Billing from "./pages/Billing";
+import Profile from "./pages/Profile";
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
 import { AuthProvider } from "./context/AuthContext";
@@ -21,6 +22,7 @@ import AdminLayout from "./pages/admin/AdminLayout"; // ← was imported but nev
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminUsers from "./pages/admin/AdminUsers";
 import Banned from "./pages/Banned";
+import AdminCampaigns from "./pages/admin/AdminCampaigns";
 
 function ScrollToTop() {
   const { pathname } = useLocation();
@@ -89,6 +91,14 @@ function App() {
                 </ProtectedRoute>
               }
             />
+            <Route
+              path="/profile"
+              element={
+                <ProtectedRoute>
+                  <Profile />
+                </ProtectedRoute>
+              }
+            />
 
             {/* ── Admin routes ── */}
             <Route
@@ -101,6 +111,7 @@ function App() {
             >
               <Route index element={<Navigate to="dashboard" replace />} />
               <Route path="dashboard" element={<AdminDashboard />} />
+              <Route path="campaigns" element={<AdminCampaigns />} />
               <Route path="users" element={<AdminUsers />} />
             </Route>
           </Routes>
