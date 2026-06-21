@@ -33,6 +33,8 @@ const connectDatabase = async () => {
       connectTimeoutMS: 15000,
       maxPoolSize: 10,
     });
+    console.log("Database:", connection.connection.name);
+    console.log("Host:", connection.connection.host);
 
     console.log(`MongoDB connected: ${connection.connection.host}`);
 

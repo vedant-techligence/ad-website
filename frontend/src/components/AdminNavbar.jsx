@@ -6,6 +6,9 @@ const ADMIN_NAV_LINKS = [
   { label: "DASHBOARD", to: "/admin/dashboard" },
   { label: "CAMPAIGNS", to: "/admin/campaigns" },
   { label: "USERS", to: "/admin/users" },
+  { label: "PAYMENTS", to: "/admin/payments" },
+  { label: "ROBOTS", to: "/admin/robots" },
+  { label: "ANALYTICS", to: "/admin/analytics" },
 ];
 
 function AdminNavbar() {

@@ -218,5 +218,48 @@ router.post("/", authMiddleware, uploadCampaignFiles, async (req, res) => {
     res.status(500).json({ message: "Failed to create campaign." });
   }
 });
+// PATCH /api/campaigns/:id/verify
+// Internal handoff endpoint — called by Yash's verification service or admin
+// to flip a paid_pending_verification campaign to public or rejected.
+const { adminMiddleware } = require("../middleware/admin");
+
+router.patch("/:id/verify", authMiddleware, adminMiddleware, async (req, res) => {
+  try {
+    const { status, issues, flaggedTerms, checksSummary, riskLevel } = req.body;
+
+    if (!["public", "rejected"].includes(status)) {
+      return res.status(400).json({ message: "status must be 'public' or 'rejected'." });
+    }
+
+    const campaign = await Campaign.findById(req.params.id);
+    if (!campaign) {
+      return res.status(404).json({ message: "Campaign not found." });
+    }
+
+    if (campaign.status !== "paid_pending_verification") {
+      return res.status(400).json({
+        message: `Campaign is in '${campaign.status}' — can only verify paid_pending_verification campaigns.`,
+      });
+    }
+
+    campaign.status = status;
+    campaign.isPublic = status === "public";
+    campaign.publishedAt = status === "public" ? new Date() : null;
+    campaign.verification.status = status === "public" ? "approved" : "rejected";
+    campaign.verification.checkedAt = new Date();
+    campaign.verification.approvedAt = status === "public" ? new Date() : null;
+    campaign.verification.issues = issues || [];
+    campaign.verification.flaggedTerms = flaggedTerms || [];
+    campaign.verification.checksSummary = checksSummary || "";
+    campaign.verification.riskLevel = riskLevel || "low";
+
+    await campaign.save();
+
+    return res.status(200).json({ success: true, data: campaign });
+  } catch (err) {
+    console.error("Verify campaign error:", err);
+    return res.status(500).json({ message: "Failed to verify campaign.", error: err.message });
+  }
+});
 
 module.exports = router;

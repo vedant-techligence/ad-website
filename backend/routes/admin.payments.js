@@ -5,6 +5,10 @@ const Campaign = require("../models/Campaign.model");
 const { authMiddleware } = require("../middleware/auth");
 const { adminMiddleware } = require("../middleware/admin");
 const Razorpay = require("razorpay");
+const {
+  generateInvoicePDF,
+  generateInvoiceHTML,
+} = require("../utils/invoiceGenerator");
 
 const razorpay = new Razorpay({
   key_id: process.env.RAZORPAY_KEY_ID,
@@ -14,6 +18,77 @@ const razorpay = new Razorpay({
 // All admin payment routes require both auth + admin role
 router.use(authMiddleware);
 router.use(adminMiddleware);
+
+
+// ─────────────────────────────────────────────
+// GET /api/admin/payments/:id/invoice
+// Downloads the invoice as a PDF file.
+// ─────
+router.get("/:id/invoice", async (req, res) => {
+  try {
+    console.log("1. Invoice route hit");
+
+    const payment = await Payment.findById(req.params.id)
+      .populate("advertiser", "name email businessName")
+      .populate("campaign", "title brandName robotPlacement startDate endDate");
+
+    console.log("2. Payment found");
+
+    const pdfBuffer = await generateInvoicePDF(payment);
+
+    console.log("3. PDF generated");
+    console.log(pdfBuffer?.length);
+
+    res.set({
+      "Content-Type": "application/pdf",
+      "Content-Disposition": `attachment; filename="invoice.pdf"`,
+    });
+
+    return res.send(pdfBuffer);
+  } catch (err) {
+    console.error("FULL ERROR:");
+    console.error(err);
+
+    return res.status(500).json({
+      message: err.message,
+      stack: err.stack,
+    });
+  }
+});
+
+// ─────────────────────────────────────────────
+// GET /api/admin/payments/:id/invoice/html
+// Returns the invoice as an HTML page for in-browser preview.
+// ─────────────────────────────────────────────
+router.get("/:id/invoice/html", async (req, res) => {
+  try {
+    const payment = await Payment.findById(req.params.id)
+      .populate("advertiser", "name email businessName")
+      .populate("campaign", "title brandName robotPlacement startDate endDate");
+
+    if (!payment) {
+      return res.status(404).json({ message: "Payment not found." });
+    }
+
+    if (
+      payment.status !== "paid" &&
+      payment.status !== "partially_refunded" &&
+      payment.status !== "refunded"
+    ) {
+      return res
+        .status(400)
+        .json({ message: "Invoice is only available for completed payments." });
+    }
+
+    const html = generateInvoiceHTML(payment);
+
+    res.set("Content-Type", "text/html");
+    return res.send(html);
+  } catch (error) {
+    console.error("Invoice HTML error:", error);
+    return res.status(500).json({ message: "Failed to generate invoice." });
+  }
+});
 
 /**
  * GET /api/admin/payments

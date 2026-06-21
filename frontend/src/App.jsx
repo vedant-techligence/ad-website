@@ -17,11 +17,14 @@ import Footer from "./components/Footer";
 import { AuthProvider } from "./context/AuthContext";
 import ProtectedRoute from "./components/ProtectedRoute";
 import AdminProtectedRoute from "./components/AdminProtectedRoute";
-import AdminLayout from "./pages/admin/AdminLayout"; // ← was imported but never used
+import AdminLayout from "./pages/admin/AdminLayout"; 
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminUsers from "./pages/admin/AdminUsers";
 import Banned from "./pages/Banned";
 import AdminCampaigns from "./pages/admin/AdminCampaigns";
+import AdminPayments from "./pages/admin/AdminPayments";
+import AdminRobots from "./pages/admin/AdminRobots";
+import AdminAnalytics from "./pages/admin/AdminAnalytics";
 
 function ScrollToTop() {
   const { pathname } = useLocation();
@@ -104,6 +107,9 @@ function App() {
               <Route path="dashboard" element={<AdminDashboard />} />
               <Route path="campaigns" element={<AdminCampaigns />} />
               <Route path="users" element={<AdminUsers />} />
+              <Route path="payments" element={<AdminPayments />} />
+              <Route path="robots" element={<AdminRobots />} />
+              <Route path="analytics" element={<AdminAnalytics />} />
             </Route>
           </Routes>
         </SiteChrome>

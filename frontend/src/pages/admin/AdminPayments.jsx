@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "../context/AuthContext";
-import api from "../api/axios";
+import { useAuth } from "../../context/useAuth";
+import api from "../../api/axios";
 import "./AdminPayments.css";
 
 const STATUS_COLORS = {
@@ -37,7 +37,7 @@ const formatDate = (iso) =>
 
 function AdminPayments() {
   const navigate = useNavigate();
-  const { token, user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
 
   const [revenue, setRevenue] = useState(null);
   const [payments, setPayments] = useState([]);
@@ -55,24 +55,23 @@ function AdminPayments() {
   const [refundSuccess, setRefundSuccess] = useState("");
 
   useEffect(() => {
-    if (!token) {
+    if (authLoading) return;
+    if (!user) {
       navigate("/login");
       return;
     }
-    if (user && user.role !== "admin") {
+    if (user.role !== "admin") {
       navigate("/dashboard");
       return;
     }
-  }, [token, user, navigate]);
+  }, [authLoading, user, navigate]);
 
   const fetchRevenue = async () => {
     try {
-      const res = await api.get("/admin/payments/revenue", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const res = await api.get("/admin/payments/revenue");
       setRevenue(res.data.data);
     } catch {
-      // non-critical — revenue summary failing doesn't block the list
+      // non-critical
     }
   };
 
@@ -82,10 +81,7 @@ function AdminPayments() {
     try {
       const params = { page: currentPage, limit: 15 };
       if (status) params.status = status;
-      const res = await api.get("/admin/payments", {
-        headers: { Authorization: `Bearer ${token}` },
-        params,
-      });
+      const res = await api.get("/admin/payments", { params });
       setPayments(res.data.data);
       setTotal(res.data.total);
       setPages(res.data.pages);
@@ -107,11 +103,11 @@ function AdminPayments() {
   };
 
   useEffect(() => {
-    if (!token) return;
+    if (authLoading || !user || user.role !== "admin") return;
     fetchRevenue();
     fetchPayments(1, "");
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [token]);
+  }, [authLoading, user]);
 
   const handleFilterChange = (status) => {
     setStatusFilter(status);
@@ -132,17 +128,39 @@ function AdminPayments() {
     setRefundSuccess("");
   };
 
+  const handleDownloadInvoice = async (paymentId) => {
+    try {
+      const response = await api.get(`/admin/payments/${paymentId}/invoice`, {
+        responseType: "blob",
+      });
+
+      const blob = new Blob([response.data], {
+        type: "application/pdf",
+      });
+
+      const url = window.URL.createObjectURL(blob);
+
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `invoice-${paymentId}.pdf`;
+
+      document.body.appendChild(link);
+      link.click();
+
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error("Download error:", err);
+    }
+  };
+
   const handleRefund = async () => {
     setRefundError("");
     setRefundSuccess("");
     try {
       const body = { reason: refundReason || "Admin-initiated refund" };
-      if (refundAmount) body.amount = Math.round(Number(refundAmount) * 100); // convert ₹ to paise
-      const res = await api.post(
-        `/admin/payments/${refundingId}/refund`,
-        body,
-        { headers: { Authorization: `Bearer ${token}` } },
-      );
+      if (refundAmount) body.amount = Math.round(Number(refundAmount) * 100);
+      const res = await api.post(`/admin/payments/${refundingId}/refund`, body);
       setRefundSuccess(res.data.message);
       fetchPayments(page, statusFilter);
       fetchRevenue();
@@ -151,9 +169,10 @@ function AdminPayments() {
     }
   };
 
+  if (authLoading) return null;
+
   return (
     <div className="page-shell">
-      {/* Hero */}
       <div className="feature-page-hero feature-page-card">
         <p className="feature-eyebrow">Admin</p>
         <h1 className="feature-title">Payment Transactions</h1>
@@ -176,7 +195,6 @@ function AdminPayments() {
         </div>
       )}
 
-      {/* Revenue summary */}
       {revenue && (
         <div
           className="feature-metrics-row"
@@ -207,7 +225,6 @@ function AdminPayments() {
         </div>
       )}
 
-      {/* Filter bar */}
       <div className="feature-page-card" style={{ marginBottom: "1rem" }}>
         <div style={{ display: "flex", gap: "0.6rem", flexWrap: "wrap" }}>
           {[
@@ -241,7 +258,6 @@ function AdminPayments() {
         </div>
       </div>
 
-      {/* Payments list */}
       <div className="feature-page-card">
         {loading ? (
           <p style={{ color: "var(--text-secondary)" }}>
@@ -300,12 +316,14 @@ function AdminPayments() {
                         {formatDate(payment.createdAt)}
                       </p>
                     </div>
+
                     <div
                       style={{
                         display: "flex",
                         alignItems: "center",
                         gap: "0.75rem",
                         flexShrink: 0,
+                        flexWrap: "wrap",
                       }}
                     >
                       <span
@@ -317,6 +335,7 @@ function AdminPayments() {
                       >
                         {currencyFormatter.format((payment.amount || 0) / 100)}
                       </span>
+
                       <span
                         style={{
                           padding: "0.3rem 0.75rem",
@@ -331,29 +350,85 @@ function AdminPayments() {
                       >
                         {STATUS_LABELS[payment.status] || payment.status}
                       </span>
-                      {payment.status === "paid" && (
-                        <button
-                          onClick={() => openRefund(payment._id)}
-                          style={{
-                            padding: "0.35rem 0.85rem",
-                            borderRadius: "12px",
-                            border: "1px solid rgba(178,41,75,0.3)",
-                            background: "rgba(178,41,75,0.08)",
-                            color: "var(--danger)",
-                            fontFamily: "var(--font-heading)",
-                            fontSize: "0.75rem",
-                            letterSpacing: "0.06em",
-                            textTransform: "uppercase",
-                            cursor: "pointer",
-                          }}
-                        >
-                          Refund
-                        </button>
+
+                      {(payment.status === "paid" ||
+                        payment.status === "partially_refunded" ||
+                        payment.status === "refunded") && (
+                        <>
+                          <button
+                            onClick={async () => {
+                              try {
+                                const res = await api.get(
+                                  `/admin/payments/${payment._id}/invoice/html`,
+                                );
+
+                                const newWindow = window.open("", "_blank");
+
+                                newWindow.document.write(res.data);
+                                newWindow.document.close();
+                              } catch (err) {
+                                console.error(err);
+                                alert("Failed to open invoice");
+                              }
+                            }}
+                            style={{
+                              padding: "0.35rem 0.85rem",
+                              borderRadius: "12px",
+                              border: "1px solid rgba(0,85,204,0.3)",
+                              background: "rgba(0,85,204,0.08)",
+                              color: "var(--accent-blue)",
+                              fontFamily: "var(--font-heading)",
+                              fontSize: "0.75rem",
+                              letterSpacing: "0.06em",
+                              textTransform: "uppercase",
+                              cursor: "pointer",
+                            }}
+                          >
+                            View Invoice
+                          </button>
+
+                          <button
+                            onClick={() => handleDownloadInvoice(payment._id)}
+                            style={{
+                              padding: "0.35rem 0.85rem",
+                              borderRadius: "12px",
+                              border: "1px solid rgba(0,85,204,0.3)",
+                              background: "rgba(0,85,204,0.08)",
+                              color: "var(--accent-blue)",
+                              fontFamily: "var(--font-heading)",
+                              fontSize: "0.75rem",
+                              letterSpacing: "0.06em",
+                              textTransform: "uppercase",
+                              cursor: "pointer",
+                            }}
+                          >
+                            Download PDF
+                          </button>
+
+                          {payment.status === "paid" && (
+                            <button
+                              onClick={() => openRefund(payment._id)}
+                              style={{
+                                padding: "0.35rem 0.85rem",
+                                borderRadius: "12px",
+                                border: "1px solid rgba(178,41,75,0.3)",
+                                background: "rgba(178,41,75,0.08)",
+                                color: "var(--danger)",
+                                fontFamily: "var(--font-heading)",
+                                fontSize: "0.75rem",
+                                letterSpacing: "0.06em",
+                                textTransform: "uppercase",
+                                cursor: "pointer",
+                              }}
+                            >
+                              Refund
+                            </button>
+                          )}
+                        </>
                       )}
                     </div>
                   </div>
 
-                  {/* Inline refund panel */}
                   {refundingId === payment._id && (
                     <div
                       style={{
@@ -468,7 +543,6 @@ function AdminPayments() {
           </div>
         )}
 
-        {/* Pagination */}
         {pages > 1 && (
           <div
             style={{
