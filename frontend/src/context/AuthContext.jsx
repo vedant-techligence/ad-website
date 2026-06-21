@@ -30,29 +30,28 @@ export function AuthProvider({ children }) {
   // Restore session on load
   useEffect(() => {
     const restoreSession = async () => {
+      if (!token) {
+        setLoading(false);
+        return;
+      }
+
       try {
-        if (!token) {
-          setLoading(false);
-          return;
-        }
-
-        const res = await api.post("/auth/refresh");
-
-        const newToken = res.data.accessToken;
-
-        setToken(newToken);
-        setAccessToken(newToken);
-
+        const res = await api.get("/auth/me");
         setUser({
-          role: res.data.role,
-          isProfileComplete: res.data.isProfileComplete,
-          isBanned: res.data.isBanned,
-          banReason: res.data.banReason,
+          ...res.data.user,
+          role: res.data.user.role,
+          isProfileComplete: res.data.user.isProfileComplete,
+          isBanned: res.data.user.isBanned || false,
+          banReason: res.data.user.banReason || "",
         });
-      } catch {
-        setToken(null);
-        setUser(null);
-        localStorage.removeItem("token");
+      } catch (err) {
+        if (err?.response?.status === 401) {
+          // Token expired — clear session
+          setToken(null);
+          setUser(null);
+          localStorage.removeItem("token");
+        }
+        // For network errors etc, keep token and let user retry
       } finally {
         setLoading(false);
       }
@@ -65,15 +64,16 @@ export function AuthProvider({ children }) {
     const res = await api.post("/auth/login", { email, password });
 
     const newToken = res.data.accessToken;
-
     setToken(newToken);
     setAccessToken(newToken);
+    localStorage.setItem("token", newToken);
 
     setUser({
+      ...res.data.user,
       role: res.data.role,
       isProfileComplete: res.data.isProfileComplete,
-      isBanned: res.data.isBanned,
-      banReason: res.data.banReason,
+      isBanned: res.data.isBanned || false,
+      banReason: res.data.banReason || "",
     });
 
     return res.data;

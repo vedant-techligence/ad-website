@@ -23,6 +23,7 @@ import Analytics from "./pages/Analytics";
 import Reports from "./pages/Reports";
 import Notifications from "./pages/Notifications";
 import Geo from "./pages/Geo";
+import Profile from "./pages/Profile";
 
 // Admin
 import AdminLayout from "./pages/admin/AdminLayout";
@@ -43,11 +44,11 @@ function ScrollToTop() {
 
 // Public route (redirect logged-in users away from login/signup)
 function PublicRoute({ children }) {
-  const { token, loading } = useAuth();
+  const { token, user, loading } = useAuth();
 
   if (loading) return <div className="app-loading-screen">Loading...</div>;
 
-  if (token) return <Navigate to="/dashboard" replace />;
+  if (token) return <Navigate to={user?.role === "admin" ? "/admin/dashboard" : "/dashboard"} replace />;
 
   return children;
 }
@@ -150,6 +151,12 @@ function AppRoutes() {
           <Route path="/geo" element={
             <ProtectedRoute>
               <Geo />
+            </ProtectedRoute>
+          } />
+
+          <Route path="/profile" element={
+            <ProtectedRoute>
+              <Profile />
             </ProtectedRoute>
           } />
 

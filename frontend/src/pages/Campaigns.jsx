@@ -204,14 +204,6 @@ function Campaigns() {
     setSuccess("");
     setSubmitting(true);
 
-    if (!files.length && !importedAssets.length) {
-      setError(
-        "Upload at least one image or video, or import one from Google Drive.",
-      );
-      setSubmitting(false);
-      return;
-    }
-
     if (
       !form.startDate ||
       !form.endDate ||

@@ -12,6 +12,8 @@ const dashboardRoutes = require("./routes/dashboard");
 const reportRoutes = require("./routes/reports");
 const notificationRoutes = require("./routes/notifications");
 const integrationRoutes = require("./routes/integrations");
+const adminCampaignRoutes = require("./routes/campaigns.admin.routes");
+const adminUserRoutes = require("./routes/adminUsers");
 const { notFound } = require("./middleware/notFound");
 const { errorHandler } = require("./middleware/errorHandler");
 
@@ -106,6 +108,8 @@ app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/reports", reportRoutes);
 app.use("/api/notifications", notificationRoutes);
 app.use("/api/integrations", integrationRoutes);
+app.use("/api/admin/campaigns", adminCampaignRoutes);
+app.use("/api/admin/users", adminUserRoutes);
 
 app.use(notFound);
 app.use(errorHandler);

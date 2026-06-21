@@ -54,49 +54,21 @@ const buildCampaignPayload = (body) => ({
   callToAction: body.callToAction || "",
   spokenWords: body.spokenWords || "",
   slideText: body.slideText || "",
-  status: body.status || "active",
-  publicationStatus: body.publicationStatus || "public",
-  budget: {
-    allocated: Number(body.budgetAllocated || body?.budget?.allocated || 0),
-    spent: Number(body.budgetSpent || body?.budget?.spent || 0),
-    currency: body.budgetCurrency || body?.budget?.currency || "USD",
-  },
-  schedule: {
-    startDate: body.startDate || body?.schedule?.startDate || null,
-    endDate: body.endDate || body?.schedule?.endDate || null,
-  },
+  startDate: body.startDate || body?.schedule?.startDate || null,
+  endDate: body.endDate || body?.schedule?.endDate || null,
+  dailyBudgetCap: Number(body.dailyBudgetCap || 0),
+  repeatRate: Number(body.repeatRate || 3),
+  estimatedCost: Number(body.estimatedCost || 0),
   targeting: {
-    audienceSegments: String(body.audienceSegments || "")
-      .split(",")
-      .map((entry) => entry.trim())
-      .filter(Boolean),
-    regions: String(body.regions || "")
-      .split(",")
-      .map((entry) => entry.trim())
-      .filter(Boolean),
-    devices: String(body.devices || "")
-      .split(",")
-      .map((entry) => entry.trim())
-      .filter(Boolean),
-  },
-  channels: String(body.channels || "Robot Display, Interactive Kiosk")
-    .split(",")
-    .map((entry) => entry.trim())
-    .filter(Boolean),
-  tags: String(body.tags || "")
-    .split(",")
-    .map((entry) => entry.trim())
-    .filter(Boolean),
-  location: {
-    city: body.city || "",
-    venue: body.venue || "",
-    lat: body.lat !== undefined && body.lat !== "" ? Number(body.lat) : 28.6139,
-    lng: body.lng !== undefined && body.lng !== "" ? Number(body.lng) : 77.209,
-  },
-  performanceGoals: {
-    impressions: Number(body.goalImpressions || 100000),
-    conversions: Number(body.goalConversions || 1500),
-    engagementRate: Number(body.goalEngagementRate || 6.5),
+    locations: String(body.locations || body.city || "")
+      .split(",").map((e) => e.trim()).filter(Boolean),
+    ageRange: {
+      min: Number(body.ageMin || 18),
+      max: Number(body.ageMax || 65),
+    },
+    interests: String(body.interests || "")
+      .split(",").map((e) => e.trim()).filter(Boolean),
+    gender: body.gender || "all",
   },
 });
 
@@ -160,16 +132,10 @@ const createCampaign = asyncHandler(async (req, res) => {
       ...payload,
       mediaAssets,
       verification,
-      isPublic: verification.status === "approved",
-      publishedAt: verification.status === "approved" ? verification.approvedAt : null,
-      publicationStatus: verification.status === "approved" ? "public" : "blocked",
-      status: payload.status || (verification.status === "approved" ? "active" : "rejected"),
-      sentimentSummary: {
-        positive: 62,
-        neutral: 24,
-        negative: 14,
-        score: 68,
-      },
+      status: verification.status === "rejected" ? "rejected" : "pending_review",
+      isPublic: false,
+      publishedAt: null,
+      sentimentSummary: { positive: 0, neutral: 0, negative: 0, score: 0 },
       generatedInsights: [],
     });
 
@@ -203,14 +169,9 @@ const updateCampaign = asyncHandler(async (req, res) => {
     ...payload,
     mediaAssets: appendedAssets,
     verification,
-    publicationStatus: verification.status === "approved" ? "public" : "blocked",
-    isPublic: verification.status === "approved",
-    publishedAt: verification.status === "approved" ? verification.approvedAt : null,
-    status:
-      req.body.status ||
-      (verification.status === "approved" && campaign.status === "rejected"
-        ? "active"
-        : campaign.status),
+    status: verification.status === "rejected" ? "rejected" : "pending_review",
+    isPublic: false,
+    publishedAt: null,
   });
 
   await campaign.save();

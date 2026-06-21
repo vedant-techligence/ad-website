@@ -4,7 +4,7 @@ const campaignCreateValidation = [
   body("title").trim().isLength({ min: 3 }).withMessage("Campaign title is required."),
   body("brandName").trim().isLength({ min: 2 }).withMessage("Brand name is required."),
   body("robotPlacement").trim().isLength({ min: 3 }).withMessage("Robot placement is required."),
-  body("description").trim().isLength({ min: 10 }).withMessage("Description is required."),
+  body("description").trim().isLength({ min: 3 }).withMessage("Description is required."),
   body("destinationUrl")
     .optional({ values: "falsy" })
     .trim()

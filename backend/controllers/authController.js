@@ -97,22 +97,25 @@ const login = asyncHandler(async (req, res) => {
     throw new ApiError(400, "Invalid email or password.");
   }
 
-  user.lastLoginAt = new Date();
-  await user.save();
+  await User.updateOne({ _id: user._id }, { lastLoginAt: new Date() });
 
   const accessToken = signToken(user);
   const refreshToken = signRefreshToken(user);
 
-  user.refreshTokenHash = hashToken(refreshToken);
-  user.refreshTokenExpiresAt = new Date(Date.now() + REFRESH_COOKIE_MAX_AGE_MS);
-
-  await user.save();
+  await User.updateOne({ _id: user._id }, {
+    refreshTokenHash: hashToken(refreshToken),
+    refreshTokenExpiresAt: new Date(Date.now() + REFRESH_COOKIE_MAX_AGE_MS),
+  });
 
   setRefreshCookie(res, refreshToken);
 
   res.status(200).json({
     accessToken,
     user: serializeUser(user),
+    role: user.role,
+    isProfileComplete: user.isProfileComplete,
+    isBanned: user.isBanned || false,
+    banReason: user.banReason || "",
   });
 });
 
@@ -168,16 +171,10 @@ const refresh = asyncHandler(
     const newRefreshToken =
       signRefreshToken(user);
 
-    user.refreshTokenHash =
-      hashToken(newRefreshToken);
-
-    user.refreshTokenExpiresAt =
-      new Date(
-        Date.now() +
-          REFRESH_COOKIE_MAX_AGE_MS
-      );
-
-    await user.save();
+    await User.updateOne({ _id: user._id }, {
+      refreshTokenHash: hashToken(newRefreshToken),
+      refreshTokenExpiresAt: new Date(Date.now() + REFRESH_COOKIE_MAX_AGE_MS),
+    });
 
     setRefreshCookie(
       res,
@@ -187,6 +184,10 @@ const refresh = asyncHandler(
     res.status(200).json({
       accessToken,
       user: serializeUser(user),
+      role: user.role,
+      isProfileComplete: user.isProfileComplete,
+      isBanned: user.isBanned || false,
+      banReason: user.banReason || "",
     });
   }
 );
@@ -327,7 +328,13 @@ const getProfile = asyncHandler(async (req, res) => {
     await bootstrapDemoWorkspace(user);
   }
 
-  res.status(200).json({ user: serializeUser(user) });
+  res.status(200).json({
+    user: serializeUser(user),
+    role: user.role,
+    isProfileComplete: user.isProfileComplete,
+    isBanned: user.isBanned || false,
+    banReason: user.banReason || "",
+  });
 });
 
 module.exports = {

@@ -33,12 +33,12 @@ const userSchema = new mongoose.Schema(
     website: {
       type: String,
       default: "",
-      match: /^https?:\/\/.+/,
+      match: [/^(https?:\/\/.+)?$/, "Website must start with http:// or https://"],
     },
     phone: {
       type: String,
       default: "",
-      match: /^[0-9]{10,15}$/,
+      match: [/^([0-9]{10,15})?$/, "Phone must be 10-15 digits"],
     },
     companySize: { type: String, enum: ["", "1-10", "11-50", "51-200", "201-500", "500+"], default: "" },
     country: { type: String, default: "" },
