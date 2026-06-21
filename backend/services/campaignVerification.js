@@ -1,4 +1,5 @@
 const path = require("path");
+const fs = require("fs");
 
 const BLOCKED_TERMS = [
   "abuse", "adult", "alcohol", "betting", "bomb", "cannabis", "casino",
@@ -20,6 +21,7 @@ const ALLOWED_IMAGE_TYPES = new Set(["image/jpeg", "image/png", "image/webp", "i
 const ALLOWED_VIDEO_TYPES = new Set(["video/mp4", "video/quicktime", "video/webm"]);
 const MAX_IMAGE_BYTES = 10 * 1024 * 1024;
 const MAX_VIDEO_BYTES = 80 * 1024 * 1024;
+const uploadsRoot = path.join(__dirname, "..", "uploads");
 
 const normalizeText = (value) =>
   String(value || "").toLowerCase().replace(/[^a-z0-9\s]/g, " ").replace(/\s+/g, " ").trim();
@@ -85,4 +87,29 @@ const verifyCampaign = ({ title, brandName, robotPlacement, destinationUrl, desc
   };
 };
 
-module.exports = { verifyCampaign };
+const mapMediaAssets = (files = []) =>
+  files.map((file) => {
+    const relativePath = path.relative(uploadsRoot, file.path).split(path.sep).join("/");
+
+    return {
+      originalName: file.originalname,
+      storedName: file.filename,
+      mimeType: file.mimetype,
+      size: file.size,
+      kind: file.mimetype.startsWith("image/") ? "image" : "video",
+      relativePath,
+      absolutePath: file.path,
+      publicUrl: `/uploads/${relativePath}`,
+    };
+  });
+
+const cleanupUploadedFiles = (files = []) => {
+  files.forEach((file) => {
+    const candidatePath = file?.path || file?.absolutePath;
+    if (candidatePath && fs.existsSync(candidatePath)) {
+      fs.unlinkSync(candidatePath);
+    }
+  });
+};
+
+module.exports = { verifyCampaign, mapMediaAssets, cleanupUploadedFiles };

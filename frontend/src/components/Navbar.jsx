@@ -1,11 +1,18 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { useAuth } from "../context/useAuth";
+import { useAuth } from "../context/AuthContext";
 import "./Navbar.css";
 
 const NAV_LINKS = [
   { label: "DASHBOARD", to: "/dashboard" },
   { label: "CAMPAIGNS", to: "/campaigns" },
   { label: "ANALYTICS", to: "/analytics" },
+
+  // Feature module pages
+  { label: "REPORTS", to: "/reports" },
+  { label: "NOTIFICATIONS", to: "/notifications" },
+  { label: "GEO", to: "/geo" },
+
+  // Existing SaaS pages
   { label: "AUDIENCE", to: "/audience" },
   { label: "BILLING", to: "/billing" },
   { label: "PROFILE", to: "/profile" },
@@ -14,8 +21,9 @@ const NAV_LINKS = [
 function Navbar() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { user, logout } = useAuth();
-  const isLoggedIn = !!user;
+  const { user, token, logout } = useAuth();
+
+  const isLoggedIn = !!token;
 
   const handleLogout = async () => {
     await logout();
@@ -25,7 +33,11 @@ function Navbar() {
   return (
     <div className="navbar-wrapper">
       <nav className="navbar">
-        <div className="navbar-brand">
+        {/* Brand */}
+        <Link
+          to={isLoggedIn ? "/dashboard" : "/login"}
+          className="navbar-brand"
+        >
           <img
             src="https://www.techligence.in/logo.png"
             alt="Techligence"
@@ -35,15 +47,18 @@ function Navbar() {
             }}
           />
           <span className="navbar-title">TECHLIGENCE</span>
-        </div>
+        </Link>
 
+        {/* Links */}
         {isLoggedIn && (
           <div className="navbar-links">
             {NAV_LINKS.map((link) => (
               <Link
                 key={link.to}
                 to={link.to}
-                className={`navbar-link ${location.pathname === link.to ? "active" : ""}`}
+                className={`navbar-link ${
+                  location.pathname === link.to ? "active" : ""
+                }`}
               >
                 {link.label}
               </Link>
@@ -51,6 +66,7 @@ function Navbar() {
           </div>
         )}
 
+        {/* Actions */}
         <div className="navbar-actions">
           {isLoggedIn ? (
             <button className="navbar-cta-button" onClick={handleLogout}>
@@ -60,10 +76,16 @@ function Navbar() {
             <>
               <Link
                 to="/login"
-                className={`navbar-link ${location.pathname === "/login" || location.pathname === "/" ? "active" : ""}`}
+                className={`navbar-link ${
+                  location.pathname === "/login" ||
+                  location.pathname === "/"
+                    ? "active"
+                    : ""
+                }`}
               >
                 LOGIN
               </Link>
+
               <Link to="/signup" className="navbar-cta-button">
                 SIGN UP
               </Link>
