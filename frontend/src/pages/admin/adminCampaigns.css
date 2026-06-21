@@ -197,6 +197,10 @@
   background: #fed7d7;
   color: #9b2335;
 }
+.admin-campaigns__badge--pending_review {
+  background: #dbeafe;
+  color: #1e40af;
+}
 .admin-campaigns__badge--pending_payment {
   background: #feebc8;
   color: #7b341e;

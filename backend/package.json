@@ -19,6 +19,7 @@
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
     "express-rate-limit": "^8.5.2",
+    "express-validator": "^7.3.2",
     "helmet": "^8.2.0",
     "hpp": "^0.2.3",
     "jsonwebtoken": "^9.0.3",
@@ -26,9 +27,14 @@
     "multer": "^2.2.0",
     "pdfkit": "^0.19.1",
     "puppeteer": "^25.1.0",
-    "razorpay": "^2.9.6"
+    "razorpay": "^2.9.6",
+    "node-cron": "^4.4.1",
+    "nodemailer": "^9.0.1",
+    "pdfkit": "^0.19.1"
   },
   "devDependencies": {
-    "nodemon": "^3.1.14"
+    "nodemon": "^3.1.14",
+    "morgan": "^1.11.0",
+    "multer": "^2.2.0"
   }
 }

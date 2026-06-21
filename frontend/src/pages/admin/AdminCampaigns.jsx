@@ -6,6 +6,7 @@ import "./campaignDetailModal.css";
 
 const STATUS_OPTIONS = [
   "all",
+  "pending_review",
   "draft",
   "pending_payment",
   "paid_pending_verification",
@@ -88,16 +89,15 @@ function AdminCampaigns() {
     setDetailError("");
   };
 
-  const handleAction = async (id, action) => {
+  const handleAction = async (id, action, reason) => {
     setActionError("");
     try {
-      await API.patch(`/admin/campaigns/${id}/${action}`);
+      const body = action === "reject" && reason ? { reason } : {};
+      await API.patch(`/admin/campaigns/${id}/${action}`, body);
       await fetchCampaigns(search, statusFilter);
       if (selectedCampaignId === id) closeDetail();
     } catch (err) {
-      setActionError(
-        err.response?.data?.message || `Failed to ${action} campaign.`,
-      );
+      setActionError(err.response?.data?.message || `Failed to ${action} campaign.`);
     }
   };
 
@@ -201,7 +201,7 @@ function AdminCampaigns() {
           loading={detailLoading}
           error={detailError}
           onClose={closeDetail}
-          onAction={(action) => handleAction(selectedCampaign._id, action)}
+          onAction={(action, reason) => handleAction(selectedCampaign._id, action, reason)}
         />
       )}
     </div>

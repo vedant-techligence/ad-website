@@ -14,20 +14,39 @@ const userSchema = new mongoose.Schema(
       unique: true,
       lowercase: true,
       trim: true,
+      match: /^\S+@\S+\.\S+$/,
     },
     password: {
       type: String,
       required: true,
       select: false,
+      minlength: 8,
     },
     role: {
       type: String,
       enum: ["user", "admin"],
       default: "user",
     },
-    businessName: { type: String },
-    industry: { type: String },
-    website: { type: String },
+
+    businessName: { type: String, default: "" },
+    industry: { type: String, default: "" },
+    website: {
+      type: String,
+      default: "",
+      match: [/^(https?:\/\/.+)?$/, "Website must start with http:// or https://"],
+    },
+    phone: {
+      type: String,
+      default: "",
+      match: [/^([0-9]{10,15})?$/, "Phone must be 10-15 digits"],
+    },
+    companySize: { type: String, enum: ["", "1-10", "11-50", "51-200", "201-500", "500+"], default: "" },
+    country: { type: String, default: "" },
+    city: { type: String, default: "" },
+    bio: { type: String, default: "", maxlength: 300 },
+    linkedIn: { type: String, default: "" },
+    twitter: { type: String, default: "" },
+    timezone: { type: String, default: "" },
     isProfileComplete: {
       type: Boolean,
       default: false,
@@ -46,6 +65,23 @@ const userSchema = new mongoose.Schema(
     },
     banReason: { type: String, default: "" },
     bannedAt: { type: Date, default: null },
+    lastLoginAt: {
+      type: Date,
+      default: null,
+    },
+    preferences: {
+      reportFrequency: {
+        type: String,
+        enum: ["daily", "weekly", "monthly"],
+        default: "weekly",
+      },
+      healthAlertThreshold: {
+        type: Number,
+        min: 0,
+        max: 100,
+        default: 65,
+      },
+    },
   },
   { timestamps: true },
 );

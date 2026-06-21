@@ -1,7 +1,8 @@
-import { useEffect, useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
-import { useAuth } from "../context/useAuth";
-import API from "../api/axios";
+import { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import toast from "react-hot-toast";
+import api from "../api/axios";
+import { useAuth } from "../context/AuthContext";
 import "./Signup.css";
 
 function Signup() {
@@ -10,51 +11,61 @@ function Signup() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const { user, loading: authLoading, login } = useAuth();
+
   const navigate = useNavigate();
+  const { setSession } = useAuth();
 
-  useEffect(() => {
-    if (authLoading || !user) return;
-    if (user.role === "admin") navigate("/admin/dashboard", { replace: true });
-    else
-      navigate(user.isProfileComplete ? "/dashboard" : "/onboarding", {
-        replace: true,
-      });
-  }, [user, authLoading, navigate]);
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const handleSubmit = async (event) => {
+    event.preventDefault();
     setError("");
+    setSubmitting(true);
 
     if (!name || !email || !password) {
       setError("All fields are required.");
+      setSubmitting(false);
       return;
     }
+
     if (password.length < 8) {
       setError("Password must be at least 8 characters.");
+      setSubmitting(false);
       return;
     }
 
     try {
-      setSubmitting(true);
-      await API.post("/auth/register", { name, email, password });
-      await login(email, password);
+      const response = await api.post("/auth/register", {
+        name,
+        email,
+        password,
+      });
+
+      // store session immediately
+      setSession(response.data.token, response.data.user);
+
+      toast.success("Account created.");
+
+      // onboarding always after signup
       navigate("/onboarding");
-    } catch (err) {
-      setError(err.response?.data?.message || "Something went wrong.");
+
+    } catch (requestError) {
+      setError(
+        requestError.response?.data?.message || "Something went wrong."
+      );
     } finally {
       setSubmitting(false);
     }
   };
 
-  if (authLoading || user) return null;
-
   return (
     <div className="signup-container">
       <div className="signup-card">
         <h2>Sign Up</h2>
-        <p className="signup-subtitle">Create your account to get started.</p>
+        <p className="signup-subtitle">
+          Create your account to get started.
+        </p>
+
         {error && <p className="signup-error">{error}</p>}
+
         <form onSubmit={handleSubmit}>
           <input
             className="signup-input"
@@ -62,25 +73,36 @@ function Signup() {
             placeholder="Name"
             value={name}
             onChange={(e) => setName(e.target.value)}
+            required
           />
+
           <input
             className="signup-input"
             type="email"
             placeholder="Email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
+            required
           />
+
           <input
             className="signup-input"
             type="password"
             placeholder="Password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
+            required
           />
-          <button className="signup-button" type="submit" disabled={submitting}>
+
+          <button
+            className="signup-button"
+            type="submit"
+            disabled={submitting}
+          >
             {submitting ? "Creating account..." : "Create Account"}
           </button>
         </form>
+
         <p className="signup-footer">
           Already have an account? <Link to="/login">Login</Link>
         </p>

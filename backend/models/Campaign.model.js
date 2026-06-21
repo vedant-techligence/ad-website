@@ -48,7 +48,7 @@ const verificationSchema = new mongoose.Schema(
   {
     status: {
       type: String,
-      enum: ["pending", "approved", "rejected"],
+      enum: ["pending", "pending_review", "approved", "rejected"],
       default: "pending",
     },
     riskLevel: {
@@ -131,27 +131,6 @@ const campaignSchema = new mongoose.Schema(
     mediaAssets: {
       type: [mediaAssetSchema],
       default: [],
-      validate: {
-        validator: function (assets) {
-          return assets.some((a) => a.kind === "video");
-        },
-        message: "At least one video file is required per campaign.",
-      },
-    },
-
-    // ---- Targeting ( who sees the ad) ----
-    targeting: {
-      locations: [{ type: String }],
-      ageRange: {
-        min: { type: Number, default: 18 },
-        max: { type: Number, default: 65 },
-      },
-      interests: [{ type: String }],
-      gender: {
-        type: String,
-        enum: ["all", "male", "female", "other"],
-        default: "all",
-      },
     },
 
     // ---- Schedule & frequency (  how long / how often) ----
@@ -192,17 +171,23 @@ const campaignSchema = new mongoose.Schema(
     status: {
       type: String,
       enum: [
-        "draft", // created, not yet submitted for payment
-        "pending_payment", // payment initiated, awaiting confirmation
-        "paid_pending_verification", // paid, waiting on content moderation
-        "public", // verified + live (kept friend's naming instead of "active")
-        "paused", // temporarily halted by advertiser (e.g. to update content or targeting)
-        "rejected", // failed verification
-        "completed", // ran its full duration
-        "cancelled", // advertiser cancelled
+        "draft",
+        "pending_review",
+        "pending_payment",
+        "paid_pending_verification",
+        "public",
+        "paused",
+        "rejected",
+        "completed",
+        "cancelled",
       ],
       default: "draft",
       index: true,
+    },
+    publicationStatus: {
+      type: String,
+      enum: ["public", "blocked", "scheduled"],
+      default: "public",
     },
     isPublic: {
       type: Boolean,
@@ -211,6 +196,172 @@ const campaignSchema = new mongoose.Schema(
     publishedAt: {
       type: Date,
       default: null,
+    },
+    report: {
+      generatedAt: {
+        type: Date,
+        default: null,
+      },
+      pdfPath: {
+        type: String,
+        default: null,
+      },
+      lastEmailedAt: {
+        type: Date,
+        default: null,
+      },
+      emailCount: {
+        type: Number,
+        default: 0,
+      },
+    },
+
+    analytics: {
+      impressions: {
+        type: Number,
+        default: 0,
+      },
+      clicks: {
+        type: Number,
+        default: 0,
+      },
+    },
+
+    budget: {
+      allocated: {
+        type: Number,
+        default: 0,
+      },
+      spent: {
+        type: Number,
+        default: 0,
+      },
+      currency: {
+        type: String,
+        default: "USD",
+      },
+    },
+
+    schedule: {
+      startDate: {
+        type: Date,
+        default: null,
+      },
+      endDate: {
+        type: Date,
+        default: null,
+      },
+    },
+
+    targeting: {
+      ageRange: {
+        min: { type: Number, default: 18 },
+        max: { type: Number, default: 65 },
+      },
+
+      locations: {
+        type: [String],
+        default: [],
+      },
+
+      interests: {
+        type: [String],
+        default: [],
+      },
+
+      gender: {
+        type: String,
+        enum: ["all", "male", "female"],
+        default: "all",
+      },
+
+      audienceSegments: {
+        type: [String],
+        default: [],
+      },
+
+      regions: {
+        type: [String],
+        default: [],
+      },
+
+      devices: {
+        type: [String],
+        default: [],
+      },
+    },
+
+    channels: {
+      type: [String],
+      default: [],
+    },
+
+    tags: {
+      type: [String],
+      default: [],
+    },
+
+    location: {
+      city: {
+        type: String,
+        default: "",
+      },
+      venue: {
+        type: String,
+        default: "",
+      },
+      lat: {
+        type: Number,
+        default: 28.6139,
+      },
+      lng: {
+        type: Number,
+        default: 77.209,
+      },
+    },
+
+    performanceGoals: {
+      impressions: {
+        type: Number,
+        default: 0,
+      },
+      conversions: {
+        type: Number,
+        default: 0,
+      },
+      engagementRate: {
+        type: Number,
+        default: 0,
+      },
+    },
+
+    sentimentSummary: {
+      positive: {
+        type: Number,
+        default: 0,
+      },
+      neutral: {
+        type: Number,
+        default: 0,
+      },
+      negative: {
+        type: Number,
+        default: 0,
+      },
+      score: {
+        type: Number,
+        default: 0,
+      },
+    },
+
+    healthScore: {
+      type: Number,
+      default: 0,
+    },
+
+    generatedInsights: {
+      type: [String],
+      default: [],
     },
   },
   { timestamps: true },
