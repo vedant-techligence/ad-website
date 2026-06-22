@@ -42,7 +42,7 @@ function Billing() {
     const loadCampaigns = async () => {
       try {
         const response = await API.get("/campaigns");
-        setCampaigns(response.data);
+        setCampaigns(response.data.items || []);
       } catch (requestError) {
         if (requestError.response?.status === 401) {
           navigate("/login");

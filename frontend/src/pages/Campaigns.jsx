@@ -296,18 +296,26 @@ function Campaigns() {
     0,
   );
 
-  const downloadReport = (id) => {
-    window.open(`${API_ORIGIN}/api/campaigns/${id}/report`, "_blank");
+  const downloadReport = async (id) => {
+    try {
+      const res = await api.get(`/campaigns/${id}/report`, { responseType: "blob" });
+      const url = URL.createObjectURL(new Blob([res.data], { type: "application/pdf" }));
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `campaign-report-${id}.pdf`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch {
+      toast.error("Failed to download report.");
+    }
   };
 
   const emailReport = async (id) => {
     try {
-      await api.post(`/campaigns/${id}/report/email`);
-
-      alert("Report emailed successfully.");
+      const res = await api.post(`/campaigns/${id}/report/email`);
+      toast.success(res.data.message || "Report emailed successfully.");
     } catch (err) {
-      console.error(err);
-      alert("Failed to send report.");
+      toast.error(err.response?.data?.message || "Failed to send report.");
     }
   };
 
@@ -644,8 +652,7 @@ function Campaigns() {
                         )}
                       </div>
                     )}
-                    {campaign.status === "completed" &&
-                      campaign.report?.pdfPath && (
+                    {(campaign.status === "completed" || campaign.status === "public") && (
                         <div className="campaign-report-actions">
                           <button
                             type="button"

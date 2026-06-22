@@ -24,6 +24,7 @@ import Reports from "./pages/Reports";
 import Notifications from "./pages/Notifications";
 import Geo from "./pages/Geo";
 import Profile from "./pages/Profile";
+import Billing from "./pages/Billing";
 
 // Admin
 import AdminLayout from "./pages/admin/AdminLayout";
@@ -157,6 +158,12 @@ function AppRoutes() {
           <Route path="/profile" element={
             <ProtectedRoute>
               <Profile />
+            </ProtectedRoute>
+          } />
+
+          <Route path="/billing" element={
+            <ProtectedRoute>
+              <Billing />
             </ProtectedRoute>
           } />
 
