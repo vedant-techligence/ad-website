@@ -21,10 +21,8 @@ const NAV_LINKS = [
 function Navbar() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { user, token, logout } = useAuth();
-
-  const isLoggedIn = !!token;
-
+const { user, token, logout } = useAuth();
+const isLoggedIn = !!token;
   const handleLogout = async () => {
     await logout();
     navigate("/login");
