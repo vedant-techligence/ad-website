@@ -245,6 +245,170 @@ const getCampaignHealth = asyncHandler(async (req, res) => {
   });
 });
 
+const getCampaignReport = asyncHandler(async (req, res) => {
+  const campaign = await Campaign.findOne({ _id: req.params.id, owner: req.user.userId });
+  if (!campaign) throw new ApiError(404, "Campaign not found.");
+
+  const snapshots = await AnalyticsSnapshot.find({ campaign: campaign._id })
+    .sort({ date: -1 }).limit(30);
+
+  const totals = snapshots.reduce(
+    (acc, s) => { acc.impressions += s.impressions; acc.clicks += s.clicks; acc.conversions += s.conversions; acc.spend += s.spend; acc.revenue += s.revenue; return acc; },
+    { impressions: 0, clicks: 0, conversions: 0, spend: 0, revenue: 0 },
+  );
+  const ctr = totals.impressions ? Number(((totals.clicks / totals.impressions) * 100).toFixed(2)) : 0;
+  const cvr = totals.clicks ? Number(((totals.conversions / totals.clicks) * 100).toFixed(2)) : 0;
+  const roas = totals.spend ? Number((totals.revenue / totals.spend).toFixed(2)) : 0;
+
+  const PDFDocument = require("pdfkit");
+  const doc = new PDFDocument({ margin: 50 });
+
+  res.setHeader("Content-Type", "application/pdf");
+  res.setHeader("Content-Disposition", `attachment; filename="report-${campaign._id}.pdf"`);
+  doc.pipe(res);
+
+  // Header
+  doc.fontSize(20).fillColor("#00a8cc").text("Campaign Report", { align: "center" });
+  doc.moveDown(0.5);
+  doc.fontSize(14).fillColor("#000").text(campaign.title, { align: "center" });
+  doc.fontSize(10).fillColor("#666").text(`Generated: ${new Date().toLocaleDateString("en-IN")}`, { align: "center" });
+  doc.moveDown(1);
+
+  // Campaign Info
+  doc.fontSize(13).fillColor("#00a8cc").text("Campaign Details");
+  doc.moveTo(50, doc.y).lineTo(550, doc.y).strokeColor("#00a8cc").stroke();
+  doc.moveDown(0.3);
+  doc.fontSize(10).fillColor("#000");
+  doc.text(`Brand: ${campaign.brandName}`);
+  doc.text(`Placement: ${campaign.robotPlacement}`);
+  doc.text(`Status: ${campaign.status}`);
+  doc.text(`Start: ${campaign.startDate ? new Date(campaign.startDate).toLocaleDateString("en-IN") : "—"}`);
+  doc.text(`End: ${campaign.endDate ? new Date(campaign.endDate).toLocaleDateString("en-IN") : "—"}`);
+  doc.text(`Daily Budget Cap: ₹${campaign.dailyBudgetCap?.toLocaleString("en-IN") || 0}`);
+  doc.text(`Estimated Cost: ₹${campaign.estimatedCost?.toLocaleString("en-IN") || 0}`);
+  doc.moveDown(1);
+
+  // Analytics
+  doc.fontSize(13).fillColor("#00a8cc").text("Analytics Summary");
+  doc.moveTo(50, doc.y).lineTo(550, doc.y).strokeColor("#00a8cc").stroke();
+  doc.moveDown(0.3);
+  doc.fontSize(10).fillColor("#000");
+  doc.text(`Impressions: ${totals.impressions.toLocaleString("en-IN")}`);
+  doc.text(`Clicks: ${totals.clicks.toLocaleString("en-IN")}`);
+  doc.text(`Conversions: ${totals.conversions.toLocaleString("en-IN")}`);
+  doc.text(`CTR: ${ctr}%`);
+  doc.text(`CVR: ${cvr}%`);
+  doc.text(`Spend: ₹${totals.spend.toFixed(2)}`);
+  doc.text(`Revenue: ₹${totals.revenue.toFixed(2)}`);
+  doc.text(`ROAS: ${roas}x`);
+  doc.text(`Health Score: ${campaign.healthScore}`);
+  doc.moveDown(1);
+
+  // Sentiment
+  if (campaign.sentimentSummary) {
+    doc.fontSize(13).fillColor("#00a8cc").text("Sentiment");
+    doc.moveTo(50, doc.y).lineTo(550, doc.y).strokeColor("#00a8cc").stroke();
+    doc.moveDown(0.3);
+    doc.fontSize(10).fillColor("#000");
+    doc.text(`Positive: ${campaign.sentimentSummary.positive}`);
+    doc.text(`Neutral: ${campaign.sentimentSummary.neutral}`);
+    doc.text(`Negative: ${campaign.sentimentSummary.negative}`);
+    doc.text(`Score: ${campaign.sentimentSummary.score}`);
+    doc.moveDown(1);
+  }
+
+  // Insights
+  if (campaign.generatedInsights?.length) {
+    doc.fontSize(13).fillColor("#00a8cc").text("Insights");
+    doc.moveTo(50, doc.y).lineTo(550, doc.y).strokeColor("#00a8cc").stroke();
+    doc.moveDown(0.3);
+    doc.fontSize(10).fillColor("#000");
+    campaign.generatedInsights.forEach((insight) => doc.text(`• ${insight}`));
+  }
+
+  doc.end();
+});
+
+const emailCampaignReport = asyncHandler(async (req, res) => {
+  const campaign = await Campaign.findOne({ _id: req.params.id, owner: req.user.userId });
+  if (!campaign) throw new ApiError(404, "Campaign not found.");
+
+  const User = require("../models/User");
+  const user = await User.findById(req.user.userId).select("email name");
+  if (!user) throw new ApiError(404, "User not found.");
+
+  const snapshots = await AnalyticsSnapshot.find({ campaign: campaign._id })
+    .sort({ date: -1 }).limit(30);
+
+  const totals = snapshots.reduce(
+    (acc, s) => { acc.impressions += s.impressions; acc.clicks += s.clicks; acc.conversions += s.conversions; acc.spend += s.spend; acc.revenue += s.revenue; return acc; },
+    { impressions: 0, clicks: 0, conversions: 0, spend: 0, revenue: 0 },
+  );
+
+  // Build PDF in memory
+  const PDFDocument = require("pdfkit");
+  const nodemailer = require("nodemailer");
+
+  const doc = new PDFDocument({ margin: 50 });
+  const chunks = [];
+  doc.on("data", (chunk) => chunks.push(chunk));
+
+  await new Promise((resolve) => {
+    doc.on("end", resolve);
+    doc.fontSize(20).fillColor("#00a8cc").text("Campaign Report", { align: "center" });
+    doc.moveDown(0.5);
+    doc.fontSize(14).fillColor("#000").text(campaign.title, { align: "center" });
+    doc.fontSize(10).fillColor("#666").text(`Generated: ${new Date().toLocaleDateString("en-IN")}`, { align: "center" });
+    doc.moveDown(1);
+    doc.fontSize(13).fillColor("#00a8cc").text("Campaign Details");
+    doc.moveTo(50, doc.y).lineTo(550, doc.y).strokeColor("#00a8cc").stroke();
+    doc.moveDown(0.3);
+    doc.fontSize(10).fillColor("#000");
+    doc.text(`Brand: ${campaign.brandName}`);
+    doc.text(`Placement: ${campaign.robotPlacement}`);
+    doc.text(`Status: ${campaign.status}`);
+    doc.text(`Daily Budget Cap: ₹${campaign.dailyBudgetCap?.toLocaleString("en-IN") || 0}`);
+    doc.text(`Estimated Cost: ₹${campaign.estimatedCost?.toLocaleString("en-IN") || 0}`);
+    doc.moveDown(1);
+    doc.fontSize(13).fillColor("#00a8cc").text("Analytics Summary");
+    doc.moveTo(50, doc.y).lineTo(550, doc.y).strokeColor("#00a8cc").stroke();
+    doc.moveDown(0.3);
+    doc.fontSize(10).fillColor("#000");
+    doc.text(`Impressions: ${totals.impressions.toLocaleString("en-IN")}`);
+    doc.text(`Clicks: ${totals.clicks.toLocaleString("en-IN")}`);
+    doc.text(`Conversions: ${totals.conversions.toLocaleString("en-IN")}`);
+    doc.text(`Spend: ₹${totals.spend.toFixed(2)}`);
+    doc.text(`Revenue: ₹${totals.revenue.toFixed(2)}`);
+    doc.text(`Health Score: ${campaign.healthScore}`);
+    if (campaign.generatedInsights?.length) {
+      doc.moveDown(1);
+      doc.fontSize(13).fillColor("#00a8cc").text("Insights");
+      doc.moveTo(50, doc.y).lineTo(550, doc.y).strokeColor("#00a8cc").stroke();
+      doc.moveDown(0.3);
+      doc.fontSize(10).fillColor("#000");
+      campaign.generatedInsights.forEach((insight) => doc.text(`• ${insight}`));
+    }
+    doc.end();
+  });
+
+  const pdfBuffer = Buffer.concat(chunks);
+
+  const transporter = nodemailer.createTransport({
+    service: "gmail",
+    auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS },
+  });
+
+  await transporter.sendMail({
+    from: `"Techligence Ads" <${process.env.EMAIL_USER}>`,
+    to: user.email,
+    subject: `Campaign Report — ${campaign.title}`,
+    html: `<p>Hi ${user.name},</p><p>Please find your campaign report for <strong>${campaign.title}</strong> attached.</p><p>— Techligence Ads</p>`,
+    attachments: [{ filename: `report-${campaign._id}.pdf`, content: pdfBuffer, contentType: "application/pdf" }],
+  });
+
+  res.status(200).json({ message: `Report sent to ${user.email}` });
+});
+
 const compareCampaigns = asyncHandler(async (req, res) => {
   const campaignIds = String(req.query.campaignIds || "")
     .split(",")
@@ -281,4 +445,6 @@ module.exports = {
   getPublicCampaigns,
   getCampaignHealth,
   compareCampaigns,
+  getCampaignReport,
+  emailCampaignReport,
 };
