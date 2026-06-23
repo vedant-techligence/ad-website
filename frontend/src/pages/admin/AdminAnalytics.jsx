@@ -37,7 +37,7 @@ function AdminAnalytics() {
         <h1 className="feature-title">Analytics</h1>
         <p className="feature-copy">
           Campaign performance, audience sentiment, geo analytics, and health
-          scores. Full implementation coming soon by Anshul &amp; Yash.
+          scores. .
         </p>
       </div>
 

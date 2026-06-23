@@ -1,0 +1,10 @@
+[33m7e72790[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mfeature/campaign-module[m[33m, [m[1;31morigin/feature/campaign-module[m[33m)[m Merge origin/main: resolve all conflicts, add missing routes to app.js
+[33m8371db6[m feat: invoice generation, admin payments robots analytics, Drive import, payment routes
+[33m4218d5b[m[33m ([m[1;31morigin/merge-conflict[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m fixed merge conflicts
+[33m60fcf91[m merge conflicts solved yet functionality issue
+[33m329d038[m[33m ([m[1;31morigin/feature/reportgen-email[m[33m)[m Merge feature/admin-review-workflow into feature/reportgen-email
+[33m7823af4[m added email feature and report generation
+[33m5e75420[m[33m ([m[1;31morigin/feature/admin-review-workflow[m[33m)[m feat: admin review workflow, profile page, remove ML/Groq verification
+[33m05df3be[m Merge feature/admin-dashboard into feature/campaign-module
+[33mb42b02e[m Payments and billing work
+[33md3dd71c[m[33m ([m[1;31morigin/feature/admin-dashboard[m[33m)[m feat(admin): Improve Dashboard UI

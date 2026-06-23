@@ -105,6 +105,59 @@ router.post("/:id/estimate", authMiddleware, async (req, res) => {
   }
 });
 
+// POST /api/campaigns/import-drive-video
+// Downloads a video from a Google Drive share link to local disk,
+// returns a mediaAsset object in the same shape as a direct upload.
+const { extractDriveFileId, buildDriveDownloadUrl, downloadFileFromUrl } = require("../utils/driveImport");
+const crypto = require("crypto");
+
+router.post("/import-drive-video", authMiddleware, async (req, res) => {
+  const { driveUrl } = req.body;
+
+  if (!driveUrl || typeof driveUrl !== "string" || !driveUrl.trim()) {
+    return res.status(400).json({ message: "driveUrl is required." });
+  }
+
+  const fileId = extractDriveFileId(driveUrl.trim());
+  if (!fileId) {
+    return res.status(400).json({
+      message: "Couldn't extract a file ID from that link. Make sure it's a valid Google Drive share URL.",
+    });
+  }
+
+  try {
+    const uploadDir = path.join(__dirname, "../uploads/campaigns");
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true });
+    }
+
+    const downloadUrl = buildDriveDownloadUrl(fileId);
+    const { path: filePath, size, contentType } = await downloadFileFromUrl(downloadUrl, uploadDir);
+
+    const storedName = path.basename(filePath);
+    const originalName = `drive-${fileId}.mp4`;
+
+    const mediaAsset = {
+      originalName,
+      storedName,
+      mimeType: contentType.split(";")[0].trim() || "video/mp4",
+      size,
+      kind: "video",
+      relativePath: `campaigns/${storedName}`,
+      publicUrl: `/uploads/campaigns/${storedName}`,
+      source: "drive",
+      sourceUrl: driveUrl.trim(),
+    };
+
+    return res.status(200).json({ mediaAsset });
+  } catch (err) {
+    console.error("Drive import error:", err);
+    return res.status(500).json({
+      message: err.message || "Failed to import video from Google Drive.",
+    });
+  }
+});
+
 // POST /api/campaigns  — create new campaign
 router.post("/", authMiddleware, uploadCampaignFiles, async (req, res) => {
   const files = req.files || [];
