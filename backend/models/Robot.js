@@ -52,7 +52,6 @@ const robotSchema = new mongoose.Schema(
   { timestamps: true },
 );
 
-robotSchema.index({ status: 1 });
 robotSchema.index({ city: 1 });
 
 module.exports = mongoose.model("Robot", robotSchema);
