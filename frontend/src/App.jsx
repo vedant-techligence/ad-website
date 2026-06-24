@@ -18,15 +18,12 @@ import Onboarding from "./pages/Onboarding";
 import Dashboard from "./pages/Dashboard";
 import Campaigns from "./pages/Campaigns";
 import Billing from "./pages/Billing";
-
-// Feature pages (Anshul & Yash's work)
 import Analytics from "./pages/Analytics";
 import Reports from "./pages/Reports";
 import Notifications from "./pages/Notifications";
 import Geo from "./pages/Geo";
 import Profile from "./pages/Profile";
 
-// Admin pages
 import AdminLayout from "./pages/admin/AdminLayout";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminUsers from "./pages/admin/AdminUsers";
@@ -43,7 +40,6 @@ function ScrollToTop() {
   return null;
 }
 
-// Public route — redirect already-logged-in users away from login/signup
 function PublicRoute({ children }) {
   const { token, user, loading } = useAuth();
   if (loading) return <div className="app-loading-screen">Loading...</div>;
@@ -57,7 +53,6 @@ function PublicRoute({ children }) {
   return children;
 }
 
-// Protected route — requires login + completed onboarding
 function ProtectedRoute({ allowIncompleteProfile = false, children }) {
   const { token, user, loading } = useAuth();
   if (loading) return <div className="app-loading-screen">Loading...</div>;
@@ -68,7 +63,6 @@ function ProtectedRoute({ allowIncompleteProfile = false, children }) {
   return children;
 }
 
-// Admin guard
 function AdminRoute({ children }) {
   const { user, token, loading } = useAuth();
   if (loading) return <div className="app-loading-screen">Loading...</div>;
@@ -77,7 +71,6 @@ function AdminRoute({ children }) {
   return children;
 }
 
-// Layout wrapper — admin routes render their own chrome via AdminLayout
 function SiteLayout({ children }) {
   const { pathname } = useLocation();
   const isAdminRoute = pathname.startsWith("/admin");
@@ -97,7 +90,6 @@ function AppRoutes() {
       <ScrollToTop />
       <SiteLayout>
         <Routes>
-          {/* ── Public ── */}
           <Route
             path="/login"
             element={
@@ -116,7 +108,6 @@ function AppRoutes() {
           />
           <Route path="/" element={<Navigate to="/dashboard" replace />} />
 
-          {/* ── User protected ── */}
           <Route
             path="/onboarding"
             element={
@@ -190,7 +181,6 @@ function AppRoutes() {
             }
           />
 
-          {/* ── Admin ── */}
           <Route
             path="/admin"
             element={
@@ -208,7 +198,6 @@ function AppRoutes() {
             <Route path="analytics" element={<AdminAnalytics />} />
           </Route>
 
-          {/* ── Fallback ── */}
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Routes>
 

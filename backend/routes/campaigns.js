@@ -15,6 +15,8 @@ const {
   getPublicCampaigns,
   getCampaignHealth,
   compareCampaigns,
+  getCampaignReport,
+  emailCampaignReport,
 } = require("../controllers/campaignController");
 
 const router = express.Router();
@@ -23,6 +25,8 @@ router.get("/public", getPublicCampaigns);
 router.get("/compare", authMiddleware, compareCampaigns);
 router.get("/", authMiddleware, listCampaigns);
 router.get("/:id/health", authMiddleware, getCampaignHealth);
+router.get("/:id/report", authMiddleware, getCampaignReport);
+router.post("/:id/report/email", authMiddleware, emailCampaignReport);
 router.get("/:id", authMiddleware, getCampaign);
 router.post("/", authMiddleware, uploadCampaignMedia, campaignCreateValidation, validate, createCampaign);
 router.patch("/:id", authMiddleware, uploadCampaignMedia, campaignUpdateValidation, validate, updateCampaign);

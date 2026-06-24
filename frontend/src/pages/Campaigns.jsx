@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import API, { API_ORIGIN } from "../api/axios";
-import { useAuth } from "../context/useAuth";
+import toast from "react-hot-toast";
+import api, { API_ORIGIN } from "../api/axios";
+import { useAuth } from "../context/AuthContext";
 import "./Campaigns.css";
 
 const INITIAL_FORM = {
@@ -47,6 +48,7 @@ function Campaigns() {
   const [campaigns, setCampaigns] = useState([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [editingId, setEditingId] = useState("");
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [feedbackTone, setFeedbackTone] = useState("success");
@@ -57,8 +59,13 @@ function Campaigns() {
   const [driveError, setDriveError] = useState("");
   const [importedAssets, setImportedAssets] = useState([]);
 
+  const loadCampaigns = async () => {
+    const response = await api.get("/campaigns", { params: { limit: 20 } });
+    setCampaigns(response.data.items || response.data);
+    setLoading(false);
+  };
+
   useEffect(() => {
-    // wait until AuthContext has finished trying to restore the session
     if (authLoading) return;
 
     if (!user) {
@@ -66,22 +73,29 @@ function Campaigns() {
       return;
     }
 
-    const loadCampaigns = async () => {
+    let active = true;
+
+    const fetch = async () => {
       try {
-        const response = await API.get("/campaigns");
-        setCampaigns(response.data);
-      } catch (requestError) {
-        if (requestError.response?.status === 401) {
+        const response = await api.get("/campaigns", { params: { limit: 20 } });
+        if (!active) return;
+        setCampaigns(response.data.items || response.data);
+      } catch (err) {
+        if (err.response?.status === 401) {
           navigate("/login");
           return;
         }
         setError("Unable to load campaigns right now.");
       } finally {
-        setLoading(false);
+        if (active) setLoading(false);
       }
     };
 
-    loadCampaigns();
+    fetch();
+
+    return () => {
+      active = false;
+    };
   }, [authLoading, user, navigate]);
 
   const handleChange = (event) => {
@@ -93,12 +107,54 @@ function Campaigns() {
     setFiles(Array.from(event.target.files || []));
   };
 
-  const openResultModal = (payload) => {
-    setResultModal(payload);
+  const openResultModal = (payload) => setResultModal(payload);
+  const closeResultModal = () => setResultModal(null);
+
+  const resetForm = ({ clearFeedback = true } = {}) => {
+    setForm(INITIAL_FORM);
+    setFiles([]);
+    setEditingId("");
+    setImportedAssets([]);
+    if (clearFeedback) {
+      setError("");
+      setSuccess("");
+    }
+    if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
-  const closeResultModal = () => {
-    setResultModal(null);
+  const handleEdit = (campaign) => {
+    setEditingId(campaign._id);
+    setForm({
+      title: campaign.title || "",
+      brandName: campaign.brandName || "",
+      robotPlacement: campaign.robotPlacement || "",
+      destinationUrl: campaign.destinationUrl || "",
+      description: campaign.description || "",
+      callToAction: campaign.callToAction || "",
+      spokenWords: campaign.spokenWords || "",
+      slideText: campaign.slideText || "",
+      startDate: campaign.startDate?.slice(0, 10) || "",
+      endDate: campaign.endDate?.slice(0, 10) || "",
+      repeatRate: campaign.repeatRate ?? 3,
+      dailyBudgetCap: campaign.dailyBudgetCap || "",
+    });
+    setFiles([]);
+    setError("");
+    setSuccess("");
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const handleDelete = async (campaignId) => {
+    if (!window.confirm("Delete this campaign? This cannot be undone.")) return;
+
+    try {
+      await api.delete(`/campaigns/${campaignId}`);
+      toast.success("Campaign deleted.");
+      if (editingId === campaignId) resetForm();
+      await loadCampaigns();
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Failed to delete campaign.");
+    }
   };
 
   const handleImportFromDrive = async () => {
@@ -117,10 +173,9 @@ function Campaigns() {
     setImportingDrive(true);
 
     try {
-      const response = await API.post("/campaigns/import-drive-video", {
+      const response = await api.post("/campaigns/import-drive-video", {
         driveUrl: driveUrl.trim(),
       });
-
       setImportedAssets((current) => [...current, response.data.mediaAsset]);
       setDriveUrl("");
     } catch (requestError) {
@@ -128,7 +183,6 @@ function Campaigns() {
         navigate("/login");
         return;
       }
-
       setDriveError(
         requestError.response?.data?.message ||
           "Couldn't import that video from Google Drive. Check the link and sharing permissions.",
@@ -151,7 +205,7 @@ function Campaigns() {
     setFeedbackTone("success");
     closeResultModal();
 
-    if (!files.length && !importedAssets.length) {
+    if (!editingId && !files.length && !importedAssets.length) {
       const message =
         "Upload at least one image or video, or import one from Google Drive.";
       setError(message);
@@ -203,9 +257,14 @@ function Campaigns() {
     }
 
     const formData = new FormData();
-    Object.entries(form).forEach(([key, value]) => formData.append(key, value));
+    Object.entries(form).forEach(([key, value]) => {
+      if (key !== "repeatRate" && key !== "dailyBudgetCap") {
+        formData.append(key, value);
+      }
+    });
+    formData.append("repeatRate", Number(form.repeatRate));
+    formData.append("dailyBudgetCap", Number(form.dailyBudgetCap));
     files.forEach((file) => formData.append("mediaFiles", file));
-
     if (importedAssets.length) {
       formData.append("importedMediaAssets", JSON.stringify(importedAssets));
     }
@@ -213,34 +272,39 @@ function Campaigns() {
     setSubmitting(true);
 
     try {
-      const response = await API.post("/campaigns", formData);
-
-      setCampaigns((current) => [response.data, ...current]);
-      setForm(INITIAL_FORM);
-      setFiles([]);
-      setImportedAssets([]);
-      if (fileInputRef.current) {
-        fileInputRef.current.value = "";
+      if (editingId) {
+        await api.patch(`/campaigns/${editingId}`, formData);
+        const message = "Campaign updated successfully.";
+        setSuccess(message);
+        setFeedbackTone("success");
+        openResultModal({
+          type: "success",
+          title: "Campaign Updated",
+          message,
+          details: [],
+        });
+      } else {
+        const response = await api.post("/campaigns", formData);
+        setCampaigns((current) => [response.data, ...current]);
+        const message =
+          "Campaign saved as a draft. Continue to payment to send it for verification and go live.";
+        setSuccess(message);
+        setFeedbackTone("success");
+        openResultModal({
+          type: "success",
+          title: "Draft Saved",
+          message,
+          details: [],
+        });
       }
 
-      const message =
-        "Campaign saved as a draft. Continue to payment to send it for verification and go live.";
-
-      setSuccess(message);
-      setFeedbackTone("success");
-
-      openResultModal({
-        type: "success",
-        title: "Draft Saved",
-        message,
-        details: [],
-      });
+      resetForm({ clearFeedback: false });
+      await loadCampaigns();
     } catch (requestError) {
       if (requestError.response?.status === 401) {
         navigate("/login");
         return;
       }
-
       const message =
         requestError.response?.data?.message || "Failed to save campaign.";
       setError(message);
@@ -253,6 +317,33 @@ function Campaigns() {
       });
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const downloadReport = async (id) => {
+    try {
+      const res = await api.get(`/campaigns/${id}/report`, {
+        responseType: "blob",
+      });
+      const url = URL.createObjectURL(
+        new Blob([res.data], { type: "application/pdf" }),
+      );
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `campaign-report-${id}.pdf`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch {
+      toast.error("Failed to download report.");
+    }
+  };
+
+  const emailReport = async (id) => {
+    try {
+      const res = await api.post(`/campaigns/${id}/report/email`);
+      toast.success(res.data.message || "Report emailed successfully.");
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Failed to send report.");
     }
   };
 
@@ -354,11 +445,21 @@ function Campaigns() {
           <div className="campaigns-form-header">
             <div>
               <p className="campaigns-section-label">New Campaign</p>
-              <h2>Create campaign draft</h2>
+              <h2>{editingId ? "Edit campaign" : "Create campaign draft"}</h2>
             </div>
-            <Link className="campaigns-dashboard-link" to="/dashboard">
-              Back to dashboard
-            </Link>
+            {editingId ? (
+              <button
+                className="campaigns-dashboard-link"
+                type="button"
+                onClick={resetForm}
+              >
+                Cancel edit
+              </button>
+            ) : (
+              <Link className="campaigns-dashboard-link" to="/dashboard">
+                Back to dashboard
+              </Link>
+            )}
           </div>
 
           {(error || success) && (
@@ -525,7 +626,9 @@ function Campaigns() {
               onChange={handleFileChange}
             />
             <span>
-              Up to 6 image/video files. Images max 10 MB. Videos max 80 MB.
+              {editingId
+                ? "Optional on edit. Upload up to 6 image/video files."
+                : "Up to 6 image/video files. Images max 10 MB. Videos max 80 MB."}
             </span>
           </label>
 
@@ -537,7 +640,6 @@ function Campaigns() {
             </div>
           )}
 
-          {/* ---- Google Drive video import section ---- */}
           <div className="campaigns-drive-import">
             <p className="campaigns-section-label">
               Or import a video from Google Drive
@@ -590,7 +692,11 @@ function Campaigns() {
             type="submit"
             disabled={submitting}
           >
-            {submitting ? "Saving campaign..." : "Save as draft"}
+            {submitting
+              ? "Saving..."
+              : editingId
+                ? "Update campaign"
+                : "Save as draft"}
           </button>
         </form>
 
@@ -673,7 +779,9 @@ function Campaigns() {
                     {!!campaign.verification?.issues?.length && (
                       <ul className="campaign-issues">
                         {campaign.verification.issues.map((issue, index) => (
-                          <li key={`${campaign._id}-${index}`}>{issue}</li>
+                          <li key={`${campaign._id}-issue-${index}`}>
+                            {issue}
+                          </li>
                         ))}
                       </ul>
                     )}
@@ -698,6 +806,43 @@ function Campaigns() {
                         )}
                       </div>
                     )}
+
+                    {(campaign.status === "completed" ||
+                      campaign.status === "public") && (
+                      <div className="campaign-report-actions">
+                        <button
+                          type="button"
+                          className="campaign-report-btn"
+                          onClick={() => downloadReport(campaign._id)}
+                        >
+                          Download Report
+                        </button>
+                        <button
+                          type="button"
+                          className="campaign-report-btn"
+                          onClick={() => emailReport(campaign._id)}
+                        >
+                          Email Report
+                        </button>
+                      </div>
+                    )}
+
+                    <div className="campaign-action-row">
+                      <button
+                        type="button"
+                        className="campaign-action-button"
+                        onClick={() => handleEdit(campaign)}
+                      >
+                        Edit
+                      </button>
+                      <button
+                        type="button"
+                        className="campaign-action-button campaign-action-delete"
+                        onClick={() => handleDelete(campaign._id)}
+                      >
+                        Delete
+                      </button>
+                    </div>
                   </article>
                 );
               })}
