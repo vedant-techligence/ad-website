@@ -13,7 +13,6 @@ const NAV_LINKS = [
   { label: "GEO", to: "/geo" },
 
   // Existing SaaS pages
-  { label: "AUDIENCE", to: "/audience" },
   { label: "BILLING", to: "/billing" },
   { label: "PROFILE", to: "/profile" },
 ];

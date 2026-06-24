@@ -87,20 +87,7 @@ function AdminAnalytics() {
             margin: "0 auto",
           }}
         >
-          Anshul &amp; Yash are building the full analytics system — sentiment
-          analysis, geo maps, campaign health scores, and emotion detection.
-          This page will be populated once that integration is complete.
-        </p>
-        <p
-          style={{
-            color: "var(--text-muted)",
-            fontSize: "0.82rem",
-            marginTop: "1.5rem",
-          }}
-        >
-          Available data for integration: Campaign (status, dates, targeting,
-          repeatRate) · Robot (location, assignedCampaigns) · Payment (amount,
-          status) — all accessible via MongoDB Atlas shared cluster.
+          Full analytics integration is coming soon.
         </p>
       </div>
     </div>

@@ -9,7 +9,6 @@ import { useEffect } from "react";
 import { Toaster } from "react-hot-toast";
 
 import Navbar from "./components/Navbar";
-import Footer from "./components/Footer";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 
 import Login from "./pages/Login";
@@ -79,7 +78,6 @@ function SiteLayout({ children }) {
     <>
       <Navbar />
       {children}
-      <Footer />
     </>
   );
 }

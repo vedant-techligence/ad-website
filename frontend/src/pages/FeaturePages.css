@@ -1,3 +1,33 @@
+.page-shell {
+  min-height: calc(100vh - 65px);
+  padding: 2rem 1.5rem 3rem;
+  background:
+    radial-gradient(circle at top left, rgba(0, 168, 204, 0.16), transparent 28%),
+    radial-gradient(circle at 85% 12%, rgba(0, 85, 204, 0.12), transparent 18%),
+    linear-gradient(180deg, #edf8ff 0%, #dfeefa 100%);
+}
+
+.page-width {
+  max-width: 1200px;
+  margin: 0 auto 1.5rem;
+}
+
+.feature-card {
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-accent);
+  border-radius: 12px;
+  box-shadow: 0 4px 24px rgba(0, 168, 204, 0.08);
+}
+
+.section-kicker {
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--accent-cyan);
+  margin: 0;
+}
+
 .feature-page-hero,
 .feature-page-card {
   padding: 1.7rem;

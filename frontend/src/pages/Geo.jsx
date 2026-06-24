@@ -55,7 +55,7 @@ function Geo() {
           <p className="section-kicker">City Summary</p>
           <h2 className="feature-title">Deployment by city</h2>
           <div className="feature-list">
-            {geo.byCity.map((city) => (
+            {(geo.byCity || []).map((city) => (
               <article key={city.city} className="feature-list-card">
                 <div>
                   <h3>{city.city}</h3>
@@ -75,7 +75,7 @@ function Geo() {
         <p className="section-kicker">Robot Fleet</p>
         <h2 className="feature-title">Tracked robot units</h2>
         <div className="feature-list">
-          {geo.items.map((robot) => (
+          {(geo.items || []).map((robot) => (
             <article key={robot.id} className="feature-list-card">
               <div>
                 <h3>{robot.name}</h3>
