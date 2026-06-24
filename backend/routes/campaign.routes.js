@@ -105,6 +105,59 @@ router.post("/:id/estimate", authMiddleware, async (req, res) => {
   }
 });
 
+// POST /api/campaigns/import-drive-video
+// Downloads a video from a Google Drive share link to local disk,
+// returns a mediaAsset object in the same shape as a direct upload.
+const { extractDriveFileId, buildDriveDownloadUrl, downloadFileFromUrl } = require("../utils/driveImport");
+const crypto = require("crypto");
+
+router.post("/import-drive-video", authMiddleware, async (req, res) => {
+  const { driveUrl } = req.body;
+
+  if (!driveUrl || typeof driveUrl !== "string" || !driveUrl.trim()) {
+    return res.status(400).json({ message: "driveUrl is required." });
+  }
+
+  const fileId = extractDriveFileId(driveUrl.trim());
+  if (!fileId) {
+    return res.status(400).json({
+      message: "Couldn't extract a file ID from that link. Make sure it's a valid Google Drive share URL.",
+    });
+  }
+
+  try {
+    const uploadDir = path.join(__dirname, "../uploads/campaigns");
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true });
+    }
+
+    const downloadUrl = buildDriveDownloadUrl(fileId);
+    const { path: filePath, size, contentType } = await downloadFileFromUrl(downloadUrl, uploadDir);
+
+    const storedName = path.basename(filePath);
+    const originalName = `drive-${fileId}.mp4`;
+
+    const mediaAsset = {
+      originalName,
+      storedName,
+      mimeType: contentType.split(";")[0].trim() || "video/mp4",
+      size,
+      kind: "video",
+      relativePath: `campaigns/${storedName}`,
+      publicUrl: `/uploads/campaigns/${storedName}`,
+      source: "drive",
+      sourceUrl: driveUrl.trim(),
+    };
+
+    return res.status(200).json({ mediaAsset });
+  } catch (err) {
+    console.error("Drive import error:", err);
+    return res.status(500).json({
+      message: err.message || "Failed to import video from Google Drive.",
+    });
+  }
+});
+
 // POST /api/campaigns  — create new campaign
 router.post("/", authMiddleware, uploadCampaignFiles, async (req, res) => {
   const files = req.files || [];
@@ -182,6 +235,7 @@ router.post("/", authMiddleware, uploadCampaignFiles, async (req, res) => {
       callToAction: sanitizeText(callToAction),
       spokenWords: sanitizeText(spokenWords),
       slideText: sanitizeText(slideText),
+
       mediaAssets,
       targeting: {
         locations: toArray(locations),
@@ -215,6 +269,49 @@ router.post("/", authMiddleware, uploadCampaignFiles, async (req, res) => {
 
     console.error("Campaign creation error:", error);
     res.status(500).json({ message: "Failed to create campaign." });
+  }
+});
+// PATCH /api/campaigns/:id/verify
+// Internal handoff endpoint — called by Yash's verification service or admin
+// to flip a paid_pending_verification campaign to public or rejected.
+const { adminMiddleware } = require("../middleware/admin");
+
+router.patch("/:id/verify", authMiddleware, adminMiddleware, async (req, res) => {
+  try {
+    const { status, issues, flaggedTerms, checksSummary, riskLevel } = req.body;
+
+    if (!["public", "rejected"].includes(status)) {
+      return res.status(400).json({ message: "status must be 'public' or 'rejected'." });
+    }
+
+    const campaign = await Campaign.findById(req.params.id);
+    if (!campaign) {
+      return res.status(404).json({ message: "Campaign not found." });
+    }
+
+    if (campaign.status !== "paid_pending_verification") {
+      return res.status(400).json({
+        message: `Campaign is in '${campaign.status}' — can only verify paid_pending_verification campaigns.`,
+      });
+    }
+
+    campaign.status = status;
+    campaign.isPublic = status === "public";
+    campaign.publishedAt = status === "public" ? new Date() : null;
+    campaign.verification.status = status === "public" ? "approved" : "rejected";
+    campaign.verification.checkedAt = new Date();
+    campaign.verification.approvedAt = status === "public" ? new Date() : null;
+    campaign.verification.issues = issues || [];
+    campaign.verification.flaggedTerms = flaggedTerms || [];
+    campaign.verification.checksSummary = checksSummary || "";
+    campaign.verification.riskLevel = riskLevel || "low";
+
+    await campaign.save();
+
+    return res.status(200).json({ success: true, data: campaign });
+  } catch (err) {
+    console.error("Verify campaign error:", err);
+    return res.status(500).json({ message: "Failed to verify campaign.", error: err.message });
   }
 });
 

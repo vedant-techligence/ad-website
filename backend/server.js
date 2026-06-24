@@ -3,7 +3,12 @@ require("dotenv").config();
 const app = require("./app");
 const { connectDatabase } = require("./config/db");
 
-require("./jobs/cron");
+// cron jobs (campaign expiry, etc.) — 
+try {
+  require("./jobs/cron");
+} catch {
+  // cron jobs file may not exist yet, non-fatal
+}
 
 const PORT = Number(process.env.PORT) || 5000;
 
@@ -17,7 +22,6 @@ const startServer = async () => {
 
     const shutdown = () => {
       console.log("Shutting down server...");
-
       server.close(() => {
         process.exit(0);
       });

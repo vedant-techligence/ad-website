@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import API from "../api/axios";
 import "./Profile.css";
 
-const INDUSTRIES = ["Technology", "Retail", "Healthcare", "Education", "Finance", "Food & Beverage", "Real Estate", "Entertainment", "Travel", "Other"];
+const INDUSTRIES = ["Real Estate", "Retail", "Technology",  "Healthcare", "Education", "Finance", "Food & Beverage", "Entertainment", "Travel", "Other"];
 const TIMEZONES = ["Asia/Kolkata", "Asia/Dubai", "Europe/London", "Europe/Paris", "America/New_York", "America/Los_Angeles", "Asia/Singapore", "Australia/Sydney"];
 
 export default function Profile() {

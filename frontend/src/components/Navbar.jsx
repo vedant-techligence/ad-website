@@ -13,7 +13,6 @@ const NAV_LINKS = [
   { label: "GEO", to: "/geo" },
 
   // Existing SaaS pages
-  { label: "AUDIENCE", to: "/audience" },
   { label: "BILLING", to: "/billing" },
   { label: "PROFILE", to: "/profile" },
 ];
@@ -21,10 +20,8 @@ const NAV_LINKS = [
 function Navbar() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { user, token, logout } = useAuth();
-
-  const isLoggedIn = !!token;
-
+const { user, token, logout } = useAuth();
+const isLoggedIn = !!token;
   const handleLogout = async () => {
     await logout();
     navigate("/login");

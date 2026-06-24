@@ -24,12 +24,31 @@ const currencyFormatter = new Intl.NumberFormat("en-IN", {
 
 const formatDate = (isoString) => (isoString ? isoString.slice(0, 10) : "—");
 
+// Loads the Razorpay checkout script once and resolves when ready.
+// Safe to call multiple times — returns immediately if already loaded.
+function loadRazorpayScript() {
+  return new Promise((resolve) => {
+    if (window.Razorpay) {
+      resolve(true);
+      return;
+    }
+    const script = document.createElement("script");
+    script.src = "https://checkout.razorpay.com/v1/checkout.js";
+    script.onload = () => resolve(true);
+    script.onerror = () => resolve(false);
+    document.body.appendChild(script);
+  });
+}
+
 function Billing() {
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
   const [campaigns, setCampaigns] = useState([]);
   const [loading, setLoading] = useState(true);
   const [pageError, setPageError] = useState("");
+  const [payingId, setPayingId] = useState(null); // campaign._id currently being paid
+  const [paymentError, setPaymentError] = useState("");
+  const [paymentSuccess, setPaymentSuccess] = useState("");
 
   useEffect(() => {
     if (authLoading) return;
@@ -57,9 +76,123 @@ function Billing() {
     loadCampaigns();
   }, [authLoading, user, navigate]);
 
-  const handleProceedToPayment = () => {
-    // Razorpay checkout isn't built yet — this is wired up but intentionally
-    // a no-op for now so the button doesn't silently fail or 404.
+  const handleProceedToPayment = async (campaign) => {
+    setPaymentError("");
+    setPaymentSuccess("");
+    setPayingId(campaign._id);
+
+    try {
+      // Step 1 — load Razorpay script
+      const scriptLoaded = await loadRazorpayScript();
+      if (!scriptLoaded) {
+        setPaymentError(
+          "Failed to load payment gateway. Check your connection and try again.",
+        );
+        return;
+      }
+
+      // Step 2 — create Razorpay order on backend
+      const token = localStorage.getItem("token");
+      if (!token) {
+        navigate("/login");
+        return;
+      }
+
+      const response = await API.post(
+        `/payments/create-order/${campaign._id}`,
+        {},
+        { headers: { Authorization: `Bearer ${token}` } },
+      );
+
+      const { orderId, amount, currency, keyId } = response.data.data;
+
+      // Step 3 — open Razorpay checkout widget
+      const options = {
+        key: keyId,
+        amount,
+        currency,
+        name: "Techligence Ads",
+        description: `Payment for: ${campaign.title}`,
+        order_id: orderId,
+
+        // Called by Razorpay after the user completes payment in the widget.
+        // IMPORTANT: Do NOT mark the campaign as paid here — the webhook does
+        // that. This handler is only for user-facing feedback.
+        handler: function () {
+          setPaymentSuccess(
+            `Payment submitted for "${campaign.title}". Your campaign will move to verification once payment is confirmed.`,
+          );
+          // Refresh the campaign list after a short delay so the status
+          // update from the webhook has time to propagate.
+          setTimeout(async () => {
+            try {
+              const refreshed = await API.get("/campaigns", {
+                headers: { Authorization: `Bearer ${token}` },
+              });
+              setCampaigns(refreshed.data);
+            } catch {
+              // Non-critical — user can refresh manually
+            }
+          }, 3000);
+        },
+
+        prefill: {
+          // Razorpay can pre-fill contact details if provided.
+          // These are optional — leave blank for now.
+          name: "",
+          email: "",
+          contact: "",
+        },
+
+        theme: {
+          color: "#005cd6",
+        },
+
+        modal: {
+          ondismiss: () => {
+            // User closed the widget without paying — reset the button.
+            setPayingId(null);
+          },
+        },
+      };
+
+      const rzp = new window.Razorpay(options);
+
+      rzp.on("payment.failed", (response) => {
+        setPaymentError(
+          `Payment failed: ${response.error.description}. Please try again.`,
+        );
+        setPayingId(null);
+      });
+
+      rzp.open();
+    } catch (requestError) {
+      if (requestError.response?.status === 401) {
+        localStorage.removeItem("token");
+        navigate("/login");
+        return;
+      }
+      if (requestError.response?.status === 400) {
+        // Campaign already in pending_payment or beyond — refresh list
+        setPaymentError(requestError.response.data.message);
+        const token = localStorage.getItem("token");
+        if (token) {
+          const refreshed = await API.get("/campaigns", {
+            headers: { Authorization: `Bearer ${token}` },
+          }).catch(() => null);
+          if (refreshed) setCampaigns(refreshed.data);
+        }
+      } else {
+        setPaymentError(
+          requestError.response?.data?.message ||
+            "Failed to initiate payment. Please try again.",
+        );
+      }
+    } finally {
+      // Only clear payingId if Razorpay widget didn't open
+      // (if it opened, ondismiss or handler clears it)
+      if (!window.Razorpay) setPayingId(null);
+    }
   };
 
   const billableCampaigns = campaigns.filter((campaign) =>
@@ -96,6 +229,10 @@ function Billing() {
       </section>
 
       {pageError && <p className="billing-page-error">{pageError}</p>}
+      {paymentError && <p className="billing-page-error">{paymentError}</p>}
+      {paymentSuccess && (
+        <p className="billing-page-success">{paymentSuccess}</p>
+      )}
 
       <section className="billing-list-card">
         <div className="billing-section-header">
@@ -144,11 +281,12 @@ function Billing() {
                   <button
                     className="billing-primary-button"
                     type="button"
-                    onClick={handleProceedToPayment}
-                    disabled
-                    title="Payment integration is coming soon"
+                    onClick={() => handleProceedToPayment(campaign)}
+                    disabled={payingId === campaign._id}
                   >
-                    Proceed to payment
+                    {payingId === campaign._id
+                      ? "Opening payment..."
+                      : "Proceed to payment"}
                   </button>
                 </div>
               </article>
@@ -186,7 +324,7 @@ function Billing() {
                   </span>
                 </div>
                 <div className="billing-breakdown-row billing-breakdown-total">
-                  <span>Locked-in amount</span>
+                  <span>Amount paid</span>
                   <span>
                     {currencyFormatter.format(campaign.estimatedCost || 0)}
                   </span>

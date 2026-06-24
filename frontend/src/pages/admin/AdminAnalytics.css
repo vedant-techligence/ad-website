@@ -1,0 +1,70 @@
+.page-shell {
+  padding: 2rem;
+}
+
+.analytics-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.analytics-card {
+  background: #fff;
+  border-radius: 18px;
+  padding: 1.25rem;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.06);
+  border: 1px solid rgba(0, 85, 204, 0.08);
+  transition: 0.2s ease;
+}
+
+.analytics-card:hover {
+  transform: translateY(-3px);
+}
+
+.analytics-card h3 {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  margin-bottom: 0.6rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.analytics-card p {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--accent-blue);
+}
+
+.analytics-coming-soon {
+  text-align: center;
+  padding: 4rem 2rem;
+}
+
+.analytics-coming-soon h2 {
+  margin-bottom: 1rem;
+  color: var(--text-primary);
+}
+
+.analytics-coming-soon p {
+  color: var(--text-secondary);
+  max-width: 700px;
+  margin: auto;
+  line-height: 1.7;
+}
+
+.analytics-note {
+  margin-top: 1.5rem;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+
+@media (max-width: 768px) {
+  .page-shell {
+    padding: 1rem;
+  }
+
+  .analytics-card p {
+    font-size: 1.5rem;
+  }
+}

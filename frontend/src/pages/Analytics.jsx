@@ -36,7 +36,7 @@ function Analytics() {
       }
 
       setOverview(overviewResponse.data.overview);
-      setCampaigns(campaignsResponse.data.items);
+      setCampaigns(campaignsResponse.data.items || []);
     });
 
     return () => {
@@ -45,10 +45,7 @@ function Analytics() {
   }, []);
 
   const sentimentData = useMemo(() => {
-    if (!overview) {
-      return [];
-    }
-
+    if (!overview?.sentimentBreakdown) return [];
     return [
       { name: "Positive", value: overview.sentimentBreakdown.positive, fill: "#00a8cc" },
       { name: "Neutral", value: overview.sentimentBreakdown.neutral, fill: "#89a9c9" },
@@ -94,10 +91,10 @@ function Analytics() {
       </section>
 
       <section className="page-width feature-metrics-row">
-        <MetricCard label="Impressions" value={compactNumber(overview.totals.impressions)} helper={`CTR ${percent(overview.totals.ctr)}`} />
-        <MetricCard label="Conversions" value={compactNumber(overview.totals.conversions)} helper={`Engagement ${percent(overview.totals.engagementRate)}`} />
-        <MetricCard label="Revenue" value={currency(overview.totals.revenue)} helper={`Spend ${currency(overview.totals.spend)}`} />
-        <MetricCard label="Avg Health" value={overview.totals.averageHealth} helper={`Sentiment ${overview.totals.averageSentiment}`} />
+        <MetricCard label="Impressions" value={compactNumber(overview.totals?.impressions)} helper={`CTR ${percent(overview.totals?.ctr)}`} />
+        <MetricCard label="Conversions" value={compactNumber(overview.totals?.conversions)} helper={`Engagement ${percent(overview.totals?.engagementRate)}`} />
+        <MetricCard label="Revenue" value={currency(overview.totals?.revenue)} helper={`Spend ${currency(overview.totals?.spend)}`} />
+        <MetricCard label="Avg Health" value={overview.totals?.averageHealth} helper={`Sentiment ${overview.totals?.averageSentiment}`} />
       </section>
 
       <section className="page-width feature-grid-two">
@@ -106,7 +103,7 @@ function Analytics() {
           <h2 className="feature-title">Impressions and conversions</h2>
           <div className="feature-chart-wrap">
             <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={overview.performanceTrend}>
+              <LineChart data={overview.performanceTrend || []}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#d9e8f3" />
                 <XAxis dataKey="date" tick={{ fill: "#2a4a6a", fontSize: 12 }} />
                 <YAxis tick={{ fill: "#2a4a6a", fontSize: 12 }} />
@@ -142,7 +139,7 @@ function Analytics() {
           <h2 className="feature-title">Budget and health by channel</h2>
           <div className="feature-chart-wrap">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={overview.channelPerformance}>
+              <BarChart data={overview.channelPerformance || []}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#d9e8f3" />
                 <XAxis dataKey="channel" tick={{ fill: "#2a4a6a", fontSize: 11 }} />
                 <YAxis tick={{ fill: "#2a4a6a", fontSize: 12 }} />
@@ -158,7 +155,7 @@ function Analytics() {
           <p className="section-kicker">Campaign Health Score</p>
           <h2 className="feature-title">Top campaigns right now</h2>
           <div className="feature-list">
-            {overview.topCampaigns.map((campaign) => (
+            {(overview.topCampaigns || []).map((campaign) => (
               <article key={campaign.id} className="feature-list-card">
                 <div>
                   <h3>{campaign.title}</h3>
@@ -209,7 +206,7 @@ function Analytics() {
 
         {comparison ? (
           <div className="feature-comparison-grid">
-            {comparison.items.map((item) => (
+            {(comparison.items || []).map((item) => (
               <article key={item.id} className="feature-comparison-card">
                 <h3>{item.title}</h3>
                 <p>{item.brandName}</p>

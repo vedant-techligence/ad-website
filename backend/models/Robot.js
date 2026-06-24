@@ -20,21 +20,25 @@ const robotSchema = new mongoose.Schema(
     },
     name: { type: String, required: true },
     robotCode: { type: String, required: true },
+    serialNumber: { type: String, unique: true, sparse: true, trim: true },
     model: { type: String, default: "TL-RoboDisplay X2" },
     status: {
       type: String,
-      enum: ["active", "charging", "maintenance", "offline"],
-      default: "active",
+      enum: ["active", "charging", "maintenance", "offline", "online"],
+      default: "offline",
+      index: true,
     },
     city: { type: String, default: "" },
-    assignedCampaigns: [{ type: mongoose.Schema.Types.ObjectId, ref: "Campaign" }],
+    assignedCampaigns: [
+      { type: mongoose.Schema.Types.ObjectId, ref: "Campaign" },
+    ],
     batteryLevel: { type: Number, default: 100 },
     networkQuality: { type: Number, default: 100 },
     uptimePct: { type: Number, default: 99.5 },
     todayImpressions: { type: Number, default: 0 },
     currentLocation: {
-      lat: { type: Number, required: true },
-      lng: { type: Number, required: true },
+      lat: { type: Number, default: 0 },
+      lng: { type: Number, default: 0 },
       address: { type: String, default: "" },
       lastSeen: { type: Date, default: Date.now },
     },
@@ -42,8 +46,12 @@ const robotSchema = new mongoose.Schema(
       type: [routeHistorySchema],
       default: [],
     },
+    lastSeenAt: { type: Date, default: null },
+    notes: { type: String, trim: true, default: "" },
   },
   { timestamps: true },
 );
+
+robotSchema.index({ city: 1 });
 
 module.exports = mongoose.model("Robot", robotSchema);

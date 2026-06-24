@@ -1,8 +1,9 @@
 import { CircleMarker, MapContainer, Popup, TileLayer } from "react-leaflet";
 
-function RobotsMap({ robots }) {
-  const center = robots.length
-    ? [robots[0].currentLocation.lat, robots[0].currentLocation.lng]
+function RobotsMap({ robots = [] }) {
+  const validRobots = robots.filter((r) => r.currentLocation?.lat && r.currentLocation?.lng);
+  const center = validRobots.length
+    ? [validRobots[0].currentLocation.lat, validRobots[0].currentLocation.lng]
     : [28.6139, 77.209];
 
   return (
@@ -12,7 +13,7 @@ function RobotsMap({ robots }) {
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
-        {robots.map((robot) => (
+        {validRobots.map((robot) => (
           <CircleMarker
             key={robot.id}
             center={[robot.currentLocation.lat, robot.currentLocation.lng]}
