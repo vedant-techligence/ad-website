@@ -80,6 +80,19 @@ const createSnapshotsForCampaign = async (campaign) => {
     const engagements = Math.round(impressions * (0.08 + seeded(seed + 5) * 0.12));
     const avgSentiment = Math.round(56 + seeded(seed + 6) * 34);
     const healthScore = Math.round(60 + seeded(seed + 7) * 35);
+    const robotInteractions = Math.round(100 + seeded(seed + 13) * 180);
+    
+    // Funnel numbers
+    const questionsAskedCount = Math.round(robotInteractions * (0.1 + seeded(seed + 15) * 0.15));
+    const actionWatchedOnly = Math.round(robotInteractions * (0.5 + seeded(seed + 16) * 0.2));
+    const actionSignup = Math.round(robotInteractions * (0.1 + seeded(seed + 17) * 0.1));
+    const actionBooked = Math.round(robotInteractions * (0.05 + seeded(seed + 18) * 0.05));
+    const actionDownloaded = Math.round(robotInteractions * (0.1 + seeded(seed + 19) * 0.1));
+
+    const sampleQuestions = questionsAskedCount > 0 
+      ? ["What is the price?", "Where can I find this store?", "How long is this valid?"]
+      : [];
+
     const date = new Date(today);
     date.setHours(0, 0, 0, 0);
     date.setDate(today.getDate() - (29 - offset));
@@ -103,7 +116,13 @@ const createSnapshotsForCampaign = async (campaign) => {
       positiveMentions: Math.round(90 + seeded(seed + 10) * 70),
       neutralMentions: Math.round(30 + seeded(seed + 11) * 35),
       negativeMentions: Math.round(8 + seeded(seed + 12) * 18),
-      robotInteractions: Math.round(100 + seeded(seed + 13) * 180),
+      robotInteractions,
+      questionsAskedCount,
+      sampleQuestions,
+      actionWatchedOnly,
+      actionSignup,
+      actionBooked,
+      actionDownloaded,
       dwellTimeSec: Number((20 + seeded(seed + 14) * 25).toFixed(1)),
       healthScore,
     };

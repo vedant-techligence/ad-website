@@ -24,6 +24,8 @@ const defaultForm = {
   venue: "Central Lobby",
   lat: "28.6139",
   lng: "77.2090",
+  videoDuration: 30,
+  realTimeCrowdTargeting: false,
   goalImpressions: 150000,
   goalConversions: 1800,
   goalEngagementRate: 6.5,
@@ -38,8 +40,8 @@ function CampaignFormModal({ open, onClose, onSubmit, submitting, initialValues 
   }
 
   const handleChange = (event) => {
-    const { name, value } = event.target;
-    setForm((current) => ({ ...current, [name]: value }));
+    const { name, value, type, checked } = event.target;
+    setForm((current) => ({ ...current, [name]: type === "checkbox" ? checked : value }));
   };
 
   const submit = (event) => {
@@ -77,11 +79,25 @@ function CampaignFormModal({ open, onClose, onSubmit, submitting, initialValues 
             <Field label="Brand name" name="brandName" value={form.brandName} onChange={handleChange} />
             <Field label="Robot placement" name="robotPlacement" value={form.robotPlacement} onChange={handleChange} />
             <Field label="Destination URL" name="destinationUrl" value={form.destinationUrl} onChange={handleChange} />
-            <Field label="City" name="city" value={form.city} onChange={handleChange} />
-            <Field label="Venue" name="venue" value={form.venue} onChange={handleChange} />
-            <Field label="Latitude" name="lat" value={form.lat} onChange={handleChange} type="number" step="0.0001" />
-            <Field label="Longitude" name="lng" value={form.lng} onChange={handleChange} type="number" step="0.0001" />
+            <Field label="Video duration (seconds)" name="videoDuration" value={form.videoDuration} onChange={handleChange} type="number" />
+            <div className="col-span-1 md:col-span-2 mt-4 p-4 rounded-xl border border-blue-100 bg-blue-50">
+              <h4 className="text-sm font-semibold text-blue-900 mb-1">Location Details</h4>
+              <p className="text-xs text-blue-700 mb-3">Specify exactly where the robot displaying this ad is or will be located.</p>
+              <div className="grid gap-4 md:grid-cols-2">
+                <Field label="City" name="city" value={form.city} onChange={handleChange} />
+                <Field label="Venue" name="venue" value={form.venue} onChange={handleChange} />
+                <Field label="Latitude" name="lat" value={form.lat} onChange={handleChange} type="number" step="0.0001" />
+                <Field label="Longitude" name="lng" value={form.lng} onChange={handleChange} type="number" step="0.0001" />
+              </div>
+            </div>
             <Field label="Status" name="status" value={form.status} onChange={handleChange} />
+            <label className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 cursor-pointer">
+              <input type="checkbox" name="realTimeCrowdTargeting" checked={form.realTimeCrowdTargeting} onChange={handleChange} className="h-5 w-5 rounded border-slate-300 text-teal-600 focus:ring-teal-500" />
+              <div>
+                <span className="block text-sm font-semibold text-slate-900">Real-time Crowd Targeting</span>
+                <span className="block text-xs text-slate-500">Dynamically show ad based on nearby demographics</span>
+              </div>
+            </label>
             <Field label="Budget allocated" name="budgetAllocated" value={form.budgetAllocated} onChange={handleChange} type="number" />
             <Field label="Budget currency" name="budgetCurrency" value={form.budgetCurrency} onChange={handleChange} />
             <Field label="Channels" name="channels" value={form.channels} onChange={handleChange} />
@@ -192,6 +208,8 @@ function buildInitialForm(initialValues) {
     venue: initialValues.location?.venue || "",
     lat: initialValues.location?.lat ?? defaultForm.lat,
     lng: initialValues.location?.lng ?? defaultForm.lng,
+    videoDuration: initialValues.videoDuration ?? defaultForm.videoDuration,
+    realTimeCrowdTargeting: initialValues.targeting?.realTimeCrowdTargeting ?? defaultForm.realTimeCrowdTargeting,
     goalImpressions: initialValues.performanceGoals?.impressions ?? defaultForm.goalImpressions,
     goalConversions: initialValues.performanceGoals?.conversions ?? defaultForm.goalConversions,
     goalEngagementRate:

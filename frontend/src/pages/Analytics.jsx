@@ -7,12 +7,14 @@ import {
 import toast from "react-hot-toast";
 import api from "../api/axios";
 import { compactNumber, currency, percent } from "../utils/format";
+import { useAuth } from "../context/AuthContext";
 import "./FeaturePages.css";
 
 const SENTIMENT_COLORS = ["#00a8cc", "#89a9c9", "#b2294b"];
 const HEALTH_COLORS = { excellent: "#0a8d6b", good: "#a96413", atRisk: "#b2294b" };
 
 function Analytics() {
+  const { user } = useAuth();
   const [overview, setOverview] = useState(null);
   const [sentiment, setSentiment] = useState(null);
   const [health, setHealth] = useState(null);
@@ -101,13 +103,20 @@ function Analytics() {
       {/* Hero */}
       <section className="page-width feature-page-hero feature-card">
         <p className="section-kicker">Analytics Overview</p>
-        <h1 className="feature-title">Campaign Analytics</h1>
+        <h1 className="feature-title">
+          Ad Performance Overview
+          {user?.role === "admin" && (
+            <span style={{ fontSize: "0.8rem", marginLeft: "0.75rem", padding: "0.2rem 0.5rem", background: "#fef3c7", color: "#d97706", borderRadius: "99px", verticalAlign: "middle" }}>
+              All Users Data
+            </span>
+          )}
+        </h1>
         <p className="feature-copy">
-          Performance trends, sentiment analysis, health scores, channel benchmarks, and
+          Performance trends, interactive funnel analysis, sentiment breakdowns, health scores, and
           campaign comparison — all driven by live MongoDB data.
         </p>
         <div style={{ display: "flex", gap: "0.5rem", marginTop: "1rem", flexWrap: "wrap" }}>
-          {["overview", "sentiment", "health", "comparison"].map((tab) => (
+          {["overview", "funnel", "sentiment", "health", "comparison"].map((tab) => (
             <button
               key={tab}
               type="button"
@@ -194,15 +203,99 @@ function Analytics() {
                     <p>{campaign.brandName} · {campaign.placement}</p>
                   </div>
                   <div className="feature-chip-column">
+                    <span style={{ background: "rgba(0,168,204,0.1)", color: "#00556f" }}>Views {compactNumber(campaign.impressions)}</span>
+                    <span style={{ background: "rgba(10,141,107,0.1)", color: "#0a8d6b" }}>Revenue {currency(campaign.revenue)}</span>
                     <span>Health {campaign.healthScore}</span>
-                    <span>Sentiment {campaign.sentimentScore}</span>
-                    <span>{currency(campaign.budgetSpent)} spent</span>
                   </div>
                 </article>
               ))}
             </div>
           </section>
         </>
+      )}
+
+      {activeTab === "funnel" && (
+        <section className="page-width feature-card feature-page-card" style={{ marginBottom: "1.3rem" }}>
+          <p className="section-kicker">Interaction Funnel</p>
+          <h2 className="feature-title">Audience Journey</h2>
+          
+          <div className="feature-grid-two" style={{ marginTop: "1.5rem" }}>
+            <div className="feature-list" style={{ flex: 1 }}>
+              <article className="feature-list-card" style={{ borderLeft: "4px solid #00a8cc" }}>
+                <div style={{ flex: 1 }}>
+                  <h3 style={{ fontSize: "1.2rem" }}>1. Looked at Robot (Impressions)</h3>
+                  <p>People who saw the robot displaying the ad</p>
+                </div>
+                <div className="feature-chip-column">
+                  <span style={{ fontSize: "1.2rem", fontWeight: "bold" }}>{compactNumber(overview?.totals.impressions)}</span>
+                </div>
+              </article>
+              <article className="feature-list-card" style={{ borderLeft: "4px solid #0088aa", marginLeft: "1rem" }}>
+                <div style={{ flex: 1 }}>
+                  <h3 style={{ fontSize: "1.2rem" }}>2. Seen Ad (Reach)</h3>
+                  <p>Unique individuals who visited the robot</p>
+                </div>
+                <div className="feature-chip-column">
+                  <span style={{ fontSize: "1.2rem", fontWeight: "bold" }}>{compactNumber(overview?.totals.reach)}</span>
+                </div>
+              </article>
+              <article className="feature-list-card" style={{ borderLeft: "4px solid #006688", marginLeft: "2rem" }}>
+                <div style={{ flex: 1 }}>
+                  <h3 style={{ fontSize: "1.2rem" }}>3. Interacted with Robot</h3>
+                  <p>People who actively engaged with the robot</p>
+                </div>
+                <div className="feature-chip-column">
+                  <span style={{ fontSize: "1.2rem", fontWeight: "bold" }}>{compactNumber(overview?.totals.robotInteractions)}</span>
+                </div>
+              </article>
+            </div>
+            
+            <div className="feature-list" style={{ flex: 1 }}>
+              <h3 className="feature-title" style={{ fontSize: "1.1rem", marginBottom: "1rem" }}>Outcome Breakdown</h3>
+              <article className="feature-list-card" style={{ background: "#f8fafc" }}>
+                <div style={{ flex: 1 }}>
+                  <h3>Asked Questions</h3>
+                  <p>Enquired about product/robot</p>
+                </div>
+                <div className="feature-chip-column">
+                  <span style={{ fontSize: "1.1rem", fontWeight: "bold", color: "#0f172a" }}>{compactNumber(overview?.totals.questionsAskedCount)}</span>
+                </div>
+              </article>
+              <article className="feature-list-card" style={{ background: "#f8fafc" }}>
+                <div style={{ flex: 1 }}>
+                  <h3>Watched Only</h3>
+                </div>
+                <div className="feature-chip-column">
+                  <span style={{ fontSize: "1.1rem", fontWeight: "bold", color: "#0f172a" }}>{compactNumber(overview?.totals.actionWatchedOnly)}</span>
+                </div>
+              </article>
+              <article className="feature-list-card" style={{ background: "#f8fafc" }}>
+                <div style={{ flex: 1 }}>
+                  <h3>Signed Up</h3>
+                </div>
+                <div className="feature-chip-column">
+                  <span style={{ fontSize: "1.1rem", fontWeight: "bold", color: "#0f172a" }}>{compactNumber(overview?.totals.actionSignup)}</span>
+                </div>
+              </article>
+              <article className="feature-list-card" style={{ background: "#f8fafc" }}>
+                <div style={{ flex: 1 }}>
+                  <h3>Booked Slot</h3>
+                </div>
+                <div className="feature-chip-column">
+                  <span style={{ fontSize: "1.1rem", fontWeight: "bold", color: "#0f172a" }}>{compactNumber(overview?.totals.actionBooked)}</span>
+                </div>
+              </article>
+              <article className="feature-list-card" style={{ background: "#f8fafc" }}>
+                <div style={{ flex: 1 }}>
+                  <h3>Downloaded Brochure</h3>
+                </div>
+                <div className="feature-chip-column">
+                  <span style={{ fontSize: "1.1rem", fontWeight: "bold", color: "#0f172a" }}>{compactNumber(overview?.totals.actionDownloaded)}</span>
+                </div>
+              </article>
+            </div>
+          </div>
+        </section>
       )}
 
       {activeTab === "sentiment" && (

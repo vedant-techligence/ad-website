@@ -11,17 +11,19 @@ const getRangeDays = (range) => {
   return 30;
 };
 
-const buildDashboardOverview = async (userId, range) => {
+const buildDashboardOverview = async (userId, role, range) => {
   const rangeDays = getRangeDays(range);
   const start = new Date();
   start.setHours(0, 0, 0, 0);
   start.setDate(start.getDate() - (rangeDays - 1));
 
+  const ownerFilter = role === "admin" ? {} : { owner: userId };
+
   const [campaigns, snapshots, notifications, robots] = await Promise.all([
-    Campaign.find({ owner: userId }).sort({ createdAt: -1 }),
-    AnalyticsSnapshot.find({ owner: userId, date: { $gte: start } }).sort({ date: 1 }),
-    Notification.find({ owner: userId }).sort({ createdAt: -1 }).limit(5),
-    Robot.find({ owner: userId }).sort({ updatedAt: -1 }),
+    Campaign.find(ownerFilter).sort({ createdAt: -1 }),
+    AnalyticsSnapshot.find({ ...ownerFilter, date: { $gte: start } }).sort({ date: 1 }),
+    Notification.find(ownerFilter).sort({ createdAt: -1 }).limit(5),
+    Robot.find(ownerFilter).sort({ updatedAt: -1 }),
   ]);
 
   const totals = snapshots.reduce(
@@ -33,6 +35,13 @@ const buildDashboardOverview = async (userId, range) => {
       accumulator.spend += snapshot.spend;
       accumulator.revenue += snapshot.revenue;
       accumulator.sentiment += snapshot.avgSentiment;
+      accumulator.reach += snapshot.reach;
+      accumulator.robotInteractions += snapshot.robotInteractions;
+      accumulator.questionsAskedCount += snapshot.questionsAskedCount;
+      accumulator.actionWatchedOnly += snapshot.actionWatchedOnly;
+      accumulator.actionSignup += snapshot.actionSignup;
+      accumulator.actionBooked += snapshot.actionBooked;
+      accumulator.actionDownloaded += snapshot.actionDownloaded;
       return accumulator;
     },
     {
@@ -43,6 +52,13 @@ const buildDashboardOverview = async (userId, range) => {
       spend: 0,
       revenue: 0,
       sentiment: 0,
+      reach: 0,
+      robotInteractions: 0,
+      questionsAskedCount: 0,
+      actionWatchedOnly: 0,
+      actionSignup: 0,
+      actionBooked: 0,
+      actionDownloaded: 0,
     },
   );
 
@@ -145,6 +161,13 @@ const buildDashboardOverview = async (userId, range) => {
           : 0,
         averageHealth,
         averageSentiment,
+        reach: totals.reach,
+        robotInteractions: totals.robotInteractions,
+        questionsAskedCount: totals.questionsAskedCount,
+        actionWatchedOnly: totals.actionWatchedOnly,
+        actionSignup: totals.actionSignup,
+        actionBooked: totals.actionBooked,
+        actionDownloaded: totals.actionDownloaded,
       },
       performanceTrend,
       topCampaigns,
@@ -160,8 +183,9 @@ const buildDashboardOverview = async (userId, range) => {
   };
 };
 
-const buildGeoAnalytics = async (userId) => {
-  const robots = await Robot.find({ owner: userId }).populate("assignedCampaigns", "title brandName healthScore");
+const buildGeoAnalytics = async (userId, role) => {
+  const ownerFilter = role === "admin" ? {} : { owner: userId };
+  const robots = await Robot.find(ownerFilter).populate("assignedCampaigns", "title brandName healthScore");
 
   const byCity = robots.reduce((map, robot) => {
     const current = map.get(robot.city) || {

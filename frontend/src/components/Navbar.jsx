@@ -12,6 +12,7 @@ const NAV_LINKS = [
   { label: "GEO", to: "/geo" },
   { label: "BILLING", to: "/billing" },
   { label: "AI INTEGRATIONS", to: "/integrations" },
+  { label: "ROBOT ANALYTICS", to: "/robot-analytics" },
 ];
 
 function Navbar() {

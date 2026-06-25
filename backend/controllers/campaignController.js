@@ -107,6 +107,7 @@ const buildTargeting = (body) => ({
   },
   interests: toArray(body.interests),
   gender: body.gender || "all",
+  realTimeCrowdTargeting: body.realTimeCrowdTargeting === true || body.realTimeCrowdTargeting === "true",
   audienceSegments: toArray(body.audienceSegments),
   regions: toArray(body.regions),
   devices: toArray(body.devices),
@@ -122,7 +123,7 @@ const shouldSeedAnalytics = (status) => ["active", "public", "completed", "sched
 
 const listCampaigns = asyncHandler(async (req, res) => {
   const { page, limit, skip } = getPagination(req.query);
-  const filters = { owner: req.user.userId };
+  const filters = req.user.role === "admin" ? {} : { owner: req.user.userId };
 
   if (req.query.status) {
     filters.status = req.query.status;
@@ -153,10 +154,8 @@ const listCampaigns = asyncHandler(async (req, res) => {
 });
 
 const getCampaign = asyncHandler(async (req, res) => {
-  const campaign = await Campaign.findOne({
-    _id: req.params.id,
-    owner: req.user.userId,
-  }).select(campaignSelect.join(" "));
+  const filter = req.user.role === "admin" ? { _id: req.params.id } : { _id: req.params.id, owner: req.user.userId };
+  const campaign = await Campaign.findOne(filter).select(campaignSelect.join(" "));
 
   if (!campaign) {
     throw new ApiError(404, "Campaign not found.");
@@ -219,6 +218,7 @@ const createCampaign = asyncHandler(async (req, res) => {
       endDate,
       repeatRate: Number(repeatRate),
       dailyBudgetCap: Number(dailyBudgetCap),
+      videoDuration: req.body.videoDuration ? Number(req.body.videoDuration) : 30,
     });
 
     const campaign = await Campaign.create({
@@ -232,6 +232,7 @@ const createCampaign = asyncHandler(async (req, res) => {
       spokenWords: sanitizeText(spokenWords),
       slideText: sanitizeText(slideText),
       mediaAssets,
+      videoDuration: req.body.videoDuration ? Number(req.body.videoDuration) : 30,
       targeting: buildTargeting(req.body),
       startDate: parsedStartDate,
       endDate: parsedEndDate,
@@ -273,10 +274,8 @@ const createCampaign = asyncHandler(async (req, res) => {
 
 const updateCampaign = asyncHandler(async (req, res) => {
   const uploadedFiles = req.files || [];
-  const campaign = await Campaign.findOne({
-    _id: req.params.id,
-    owner: req.user.userId,
-  });
+  const filter = req.user.role === "admin" ? { _id: req.params.id } : { _id: req.params.id, owner: req.user.userId };
+  const campaign = await Campaign.findOne(filter);
 
   if (!campaign) {
     cleanupUploadedFiles(uploadedFiles);
@@ -312,6 +311,14 @@ const updateCampaign = asyncHandler(async (req, res) => {
       slideText: req.body.slideText !== undefined ? sanitizeText(req.body.slideText) : campaign.slideText,
       mediaAssets: appendedAssets,
     });
+
+    if (req.body.videoDuration !== undefined) {
+      campaign.videoDuration = Number(req.body.videoDuration);
+    }
+
+    if (req.body.realTimeCrowdTargeting !== undefined) {
+      campaign.targeting.realTimeCrowdTargeting = req.body.realTimeCrowdTargeting === true || req.body.realTimeCrowdTargeting === "true";
+    }
 
     if (req.body.startDate) {
       campaign.startDate = new Date(req.body.startDate);
@@ -379,10 +386,8 @@ const updateCampaign = asyncHandler(async (req, res) => {
 });
 
 const deleteCampaign = asyncHandler(async (req, res) => {
-  const campaign = await Campaign.findOneAndDelete({
-    _id: req.params.id,
-    owner: req.user.userId,
-  });
+  const filter = req.user.role === "admin" ? { _id: req.params.id } : { _id: req.params.id, owner: req.user.userId };
+  const campaign = await Campaign.findOneAndDelete(filter);
 
   if (!campaign) {
     throw new ApiError(404, "Campaign not found.");
@@ -409,10 +414,8 @@ const getPublicCampaigns = asyncHandler(async (_req, res) => {
 });
 
 const estimateCampaign = asyncHandler(async (req, res) => {
-  const campaign = await Campaign.findOne({
-    _id: req.params.id,
-    owner: req.user.userId,
-  });
+  const filter = req.user.role === "admin" ? { _id: req.params.id } : { _id: req.params.id, owner: req.user.userId };
+  const campaign = await Campaign.findOne(filter);
 
   if (!campaign) {
     throw new ApiError(404, "Campaign not found.");
@@ -427,6 +430,7 @@ const estimateCampaign = asyncHandler(async (req, res) => {
     endDate: campaign.endDate,
     repeatRate: campaign.repeatRate,
     dailyBudgetCap: campaign.dailyBudgetCap,
+    videoDuration: campaign.videoDuration || 30,
   });
 
   campaign.estimatedCost = breakdown.estimatedCost;
@@ -474,10 +478,8 @@ const importDriveVideo = asyncHandler(async (req, res) => {
 });
 
 const getCampaignHealth = asyncHandler(async (req, res) => {
-  const campaign = await Campaign.findOne({
-    _id: req.params.id,
-    owner: req.user.userId,
-  });
+  const filter = req.user.role === "admin" ? { _id: req.params.id } : { _id: req.params.id, owner: req.user.userId };
+  const campaign = await Campaign.findOne(filter);
 
   if (!campaign) {
     throw new ApiError(404, "Campaign not found.");
@@ -519,10 +521,8 @@ const compareCampaigns = asyncHandler(async (req, res) => {
     .filter((id) => mongoose.Types.ObjectId.isValid(id))
     .map((id) => new mongoose.Types.ObjectId(id));
 
-  const campaigns = await Campaign.find({
-    _id: { $in: objectIds },
-    owner: req.user.userId,
-  });
+  const filter = req.user.role === "admin" ? { _id: { $in: objectIds } } : { _id: { $in: objectIds }, owner: req.user.userId };
+  const campaigns = await Campaign.find(filter);
 
   if (campaigns.length < 2) {
     throw new ApiError(404, "Two or more valid campaigns are required for comparison.");

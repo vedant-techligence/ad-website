@@ -9,6 +9,7 @@ function calculateCampaignEstimate({
   endDate,
   repeatRate,
   dailyBudgetCap,
+  videoDuration = 30, // Default to 30s if not provided
 }) {
   const msPerDay = 1000 * 60 * 60 * 24;
   const durationDays = Math.max(
@@ -16,10 +17,10 @@ function calculateCampaignEstimate({
     Math.ceil((new Date(endDate) - new Date(startDate)) / msPerDay),
   );
 
-  const { BASE_RATE_PER_REPEAT_PER_DAY, PLATFORM_FEE_PERCENT, GST_PERCENT } =
+  const { COST_PER_MIN, PLATFORM_FEE_PERCENT, GST_PERCENT } =
     pricingConfig;
 
-  const baseCost = durationDays * repeatRate * BASE_RATE_PER_REPEAT_PER_DAY;
+  const baseCost = (videoDuration / 60) * repeatRate * COST_PER_MIN * durationDays;
   const platformFee = (baseCost * PLATFORM_FEE_PERCENT) / 100;
   const subtotal = baseCost + platformFee;
   const gst = (subtotal * GST_PERCENT) / 100;

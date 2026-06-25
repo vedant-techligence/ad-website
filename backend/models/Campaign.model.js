@@ -130,6 +130,10 @@ const campaignSchema = new mongoose.Schema(
       type: [mediaAssetSchema],
       default: [],
     },
+    videoDuration: {
+      type: Number,
+      default: 30,
+    },
     targeting: {
       locations: [{ type: String }],
       ageRange: {
@@ -141,6 +145,10 @@ const campaignSchema = new mongoose.Schema(
         type: String,
         enum: ["all", "male", "female", "other"],
         default: "all",
+      },
+      realTimeCrowdTargeting: {
+        type: Boolean,
+        default: false,
       },
       audienceSegments: { type: [String], default: [] },
       regions: { type: [String], default: [] },

@@ -18,6 +18,7 @@ import Geo from "./pages/Geo";
 import Billing from "./pages/Billing";
 import Integrations from "./pages/Integrations";
 import CompareCampaigns from "./pages/CompareCampaigns";
+import RobotAnalytics from "./pages/RobotAnalytics";
 
 function ScrollToTop() {
   const { pathname } = useLocation();
@@ -182,6 +183,14 @@ function AppRoutes() {
           element={(
             <ProtectedRoute>
               <Integrations />
+            </ProtectedRoute>
+          )}
+        />
+        <Route
+          path="/robot-analytics"
+          element={(
+            <ProtectedRoute>
+              <RobotAnalytics />
             </ProtectedRoute>
           )}
         />

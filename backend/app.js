@@ -14,6 +14,7 @@ const analyticsRoutes = require("./routes/analytics");
 const reportRoutes = require("./routes/reports");
 const notificationRoutes = require("./routes/notifications");
 const integrationRoutes = require("./routes/integrations");
+const robotAnalyticsRoutes = require("./routes/robot-analytics");
 const { notFound } = require("./middleware/notFound");
 const { errorHandler } = require("./middleware/errorHandler");
 
@@ -118,6 +119,7 @@ app.use("/api/analytics", analyticsRoutes);
 app.use("/api/reports", reportRoutes);
 app.use("/api/notifications", notificationRoutes);
 app.use("/api/integrations", integrationRoutes);
+app.use("/api/robot-analytics", robotAnalyticsRoutes);
 
 app.use(notFound);
 app.use(errorHandler);

@@ -9,15 +9,17 @@ const getRangeDays = (range) => {
   return 30;
 };
 
-const buildSentimentAnalytics = async (userId, range) => {
+const buildSentimentAnalytics = async (userId, role, range) => {
   const rangeDays = getRangeDays(range);
   const start = new Date();
   start.setHours(0, 0, 0, 0);
   start.setDate(start.getDate() - (rangeDays - 1));
 
+  const ownerFilter = role === "admin" ? {} : { owner: userId };
+
   const [campaigns, snapshots] = await Promise.all([
-    Campaign.find({ owner: userId }).select("title brandName sentimentSummary healthScore status"),
-    AnalyticsSnapshot.find({ owner: userId, date: { $gte: start } }).sort({ date: 1 }),
+    Campaign.find(ownerFilter).select("title brandName sentimentSummary healthScore status"),
+    AnalyticsSnapshot.find({ ...ownerFilter, date: { $gte: start } }).sort({ date: 1 }),
   ]);
 
   const breakdown = campaigns.reduce(
@@ -69,8 +71,9 @@ const buildSentimentAnalytics = async (userId, range) => {
   };
 };
 
-const buildHealthScoreAnalytics = async (userId) => {
-  const campaigns = await Campaign.find({ owner: userId }).sort({ healthScore: -1 });
+const buildHealthScoreAnalytics = async (userId, role) => {
+  const ownerFilter = role === "admin" ? {} : { owner: userId };
+  const campaigns = await Campaign.find(ownerFilter).sort({ healthScore: -1 });
 
   const scores = campaigns.map((campaign) => campaign.healthScore || 0);
   const average = scores.length

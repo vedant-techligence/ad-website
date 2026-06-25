@@ -11,6 +11,7 @@ const signToken = (user) =>
     {
       userId: user._id,
       email: user.email,
+      role: user.role,
       isProfileComplete: user.isProfileComplete,
     },
     process.env.JWT_SECRET,
