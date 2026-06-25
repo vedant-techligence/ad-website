@@ -9,6 +9,7 @@ const ADMIN_NAV_LINKS = [
   { label: "PAYMENTS", to: "/admin/payments" },
   { label: "ROBOTS", to: "/admin/robots" },
   { label: "ANALYTICS", to: "/admin/analytics" },
+  { label: "PRICING", to: "/admin/pricing" },
 ];
 
 function AdminNavbar() {

@@ -17,12 +17,14 @@ const {
   compareCampaigns,
   getCampaignReport,
   emailCampaignReport,
+  estimateCampaignCost,
 } = require("../controllers/campaignController");
 
 const router = express.Router();
 
 router.get("/public", getPublicCampaigns);
 router.get("/compare", authMiddleware, compareCampaigns);
+router.post("/estimate", authMiddleware, estimateCampaignCost);
 router.get("/", authMiddleware, listCampaigns);
 router.get("/:id/health", authMiddleware, getCampaignHealth);
 router.get("/:id/report", authMiddleware, getCampaignReport);

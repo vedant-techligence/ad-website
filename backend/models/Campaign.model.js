@@ -133,6 +133,16 @@ const campaignSchema = new mongoose.Schema(
       default: [],
     },
 
+    contextPdf: {
+      originalName: { type: String, default: null },
+      storedName: { type: String, default: null },
+      publicUrl: { type: String, default: null },
+    },
+
+    placement: { type: String, default: "other" },
+    timing: { type: String, enum: ["peak", "offpeak", "standard"], default: "standard" },
+    audience: { type: String, enum: ["all", "premium", "youth", "corporate"], default: "all" },
+
     // ---- Schedule & frequency (  how long / how often) ----
     startDate: {
       type: Date,

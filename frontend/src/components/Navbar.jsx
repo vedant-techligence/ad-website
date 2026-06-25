@@ -14,6 +14,7 @@ const NAV_LINKS = [
 
   // Existing SaaS pages
   { label: "BILLING", to: "/billing" },
+  { label: "PRICING", to: "/pricing" },
   { label: "PROFILE", to: "/profile" },
 ];
 

@@ -17,6 +17,7 @@ import Onboarding from "./pages/Onboarding";
 import Dashboard from "./pages/Dashboard";
 import Campaigns from "./pages/Campaigns";
 import Billing from "./pages/Billing";
+import PricingCalculator from "./pages/PricingCalculator";
 import Analytics from "./pages/Analytics";
 import Reports from "./pages/Reports";
 import Notifications from "./pages/Notifications";
@@ -27,6 +28,7 @@ import AdminLayout from "./pages/admin/AdminLayout";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminUsers from "./pages/admin/AdminUsers";
 import AdminCampaigns from "./pages/admin/AdminCampaigns";
+import AdminPricing from "./pages/admin/AdminPricing";
 import AdminPayments from "./pages/admin/AdminPayments";
 import AdminRobots from "./pages/admin/AdminRobots";
 import AdminAnalytics from "./pages/admin/AdminAnalytics";
@@ -139,6 +141,14 @@ function AppRoutes() {
             }
           />
           <Route
+            path="/pricing"
+            element={
+              <ProtectedRoute>
+                <PricingCalculator />
+              </ProtectedRoute>
+            }
+          />
+          <Route
             path="/analytics"
             element={
               <ProtectedRoute>
@@ -191,6 +201,7 @@ function AppRoutes() {
             <Route path="dashboard" element={<AdminDashboard />} />
             <Route path="users" element={<AdminUsers />} />
             <Route path="campaigns" element={<AdminCampaigns />} />
+            <Route path="pricing" element={<AdminPricing />} />
             <Route path="payments" element={<AdminPayments />} />
             <Route path="robots" element={<AdminRobots />} />
             <Route path="analytics" element={<AdminAnalytics />} />

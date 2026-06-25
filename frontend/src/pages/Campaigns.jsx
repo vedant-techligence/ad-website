@@ -18,6 +18,7 @@ const INITIAL_FORM = {
   endDate: "",
   repeatRate: 3,
   dailyBudgetCap: "",
+  placement: "other",
 };
 
 const STATUS_LABELS = {
@@ -41,10 +42,14 @@ const dateFormatter = new Intl.DateTimeFormat("en-IN", {
 function Campaigns() {
   const navigate = useNavigate();
   const fileInputRef = useRef(null);
+  const pdfInputRef = useRef(null);
   const { user, loading: authLoading } = useAuth();
 
   const [form, setForm] = useState(INITIAL_FORM);
   const [files, setFiles] = useState([]);
+  const [pdfFile, setPdfFile] = useState(null);
+  const [estimate, setEstimate] = useState(null);
+  const [estimating, setEstimating] = useState(false);
   const [campaigns, setCampaigns] = useState([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -98,9 +103,24 @@ function Campaigns() {
     };
   }, [authLoading, user, navigate]);
 
+  const fetchEstimate = async (updatedForm) => {
+    const { startDate, endDate, repeatRate, dailyBudgetCap, placement } = updatedForm;
+    if (!startDate || !endDate || !repeatRate) return;
+    setEstimating(true);
+    try {
+      const res = await api.post("/campaigns/estimate", { startDate, endDate, repeatRate: Number(repeatRate), dailyBudgetCap: Number(dailyBudgetCap) || 0, placement });
+      setEstimate(res.data);
+    } catch { /* silent */ }
+    finally { setEstimating(false); }
+  };
+
   const handleChange = (event) => {
     const { name, value } = event.target;
-    setForm((current) => ({ ...current, [name]: value }));
+    const updated = { ...form, [name]: value };
+    setForm(updated);
+    if (["startDate", "endDate", "repeatRate", "dailyBudgetCap", "placement"].includes(name)) {
+      fetchEstimate(updated);
+    }
   };
 
   const handleFileChange = (event) => {
@@ -113,13 +133,13 @@ function Campaigns() {
   const resetForm = ({ clearFeedback = true } = {}) => {
     setForm(INITIAL_FORM);
     setFiles([]);
+    setPdfFile(null);
+    setEstimate(null);
     setEditingId("");
     setImportedAssets([]);
-    if (clearFeedback) {
-      setError("");
-      setSuccess("");
-    }
+    if (clearFeedback) { setError(""); setSuccess(""); }
     if (fileInputRef.current) fileInputRef.current.value = "";
+    if (pdfInputRef.current) pdfInputRef.current.value = "";
   };
 
   const handleEdit = (campaign) => {
@@ -265,6 +285,7 @@ function Campaigns() {
     formData.append("repeatRate", Number(form.repeatRate));
     formData.append("dailyBudgetCap", Number(form.dailyBudgetCap));
     files.forEach((file) => formData.append("mediaFiles", file));
+    if (pdfFile) formData.append("mediaFiles", pdfFile);
     if (importedAssets.length) {
       formData.append("importedMediaAssets", JSON.stringify(importedAssets));
     }
@@ -568,7 +589,64 @@ function Campaigns() {
                 required
               />
             </label>
+
+            <label>
+              Placement Type
+              <select name="placement" value={form.placement} onChange={handleChange}>
+                <optgroup label="Malls — Pune">
+                  <option value="phoenix_marketcity_pune">Phoenix Marketcity Pune</option>
+                  <option value="amanora_mall">Amanora Mall</option>
+                  <option value="seasons_mall">Seasons Mall</option>
+                  <option value="westend_mall">Westend Mall</option>
+                  <option value="pavilion_mall">Pavilion Mall</option>
+                  <option value="elpro_city_square">Elpro City Square</option>
+                  <option value="the_pavillion">The Pavillion</option>
+                </optgroup>
+                <optgroup label="Hotels — Pune">
+                  <option value="jw_marriott_pune">JW Marriott Hotel Pune</option>
+                  <option value="conrad_pune">Conrad Pune</option>
+                  <option value="ritz_carlton_pune">The Ritz-Carlton, Pune</option>
+                  <option value="hyatt_regency_pune">Hyatt Regency Pune</option>
+                  <option value="sheraton_grand_pune">Sheraton Grand Pune</option>
+                  <option value="novotel_pune">Novotel Pune Nagar Road</option>
+                  <option value="blue_diamond_pune">Blue Diamond Pune</option>
+                </optgroup>
+                <optgroup label="Other">
+                  <option value="hospital">Hospital</option>
+                  <option value="metro">Metro Station</option>
+                  <option value="airport">Airport</option>
+                  <option value="other">Other</option>
+                </optgroup>
+              </select>
+            </label>
           </div>
+
+          {estimate && (
+            <div className="campaigns-estimate-box">
+              <p className="campaigns-section-label">Cost Estimate</p>
+              <div className="campaigns-estimate-row">
+                <span>Base cost ({estimate.durationDays} days)</span>
+                <span>₹{estimate.breakdown.baseCost?.toLocaleString("en-IN")}</span>
+              </div>
+              <div className="campaigns-estimate-row">
+                <span>Placement ×{estimate.breakdown.placementMultiplier}</span>
+              </div>
+              <div className="campaigns-estimate-row">
+                <span>Platform fee</span>
+                <span>₹{estimate.breakdown.platformFee?.toLocaleString("en-IN")}</span>
+              </div>
+              <div className="campaigns-estimate-row">
+                <span>GST</span>
+                <span>₹{estimate.breakdown.gst?.toLocaleString("en-IN")}</span>
+              </div>
+              <div className="campaigns-estimate-row campaigns-estimate-total">
+                <span>Total Estimated Cost</span>
+                <span>₹{estimate.breakdown.estimatedCost?.toLocaleString("en-IN")}</span>
+              </div>
+              {estimate.budgetWarning && <p className="campaigns-estimate-warning">{estimate.budgetWarning}</p>}
+              {estimating && <p style={{ fontSize: "0.8rem", color: "var(--text-muted)" }}>Recalculating...</p>}
+            </div>
+          )}
 
           <label>
             Ad copy
@@ -631,6 +709,18 @@ function Campaigns() {
                 : "Up to 6 image/video files. Images max 10 MB. Videos max 80 MB."}
             </span>
           </label>
+
+          <label className="campaigns-upload">
+            Company/Product Context PDF (optional)
+            <input
+              ref={pdfInputRef}
+              type="file"
+              accept="application/pdf"
+              onChange={(e) => setPdfFile(e.target.files[0] || null)}
+            />
+            <span>Upload a product brochure or ad brief PDF. Used by robot AI for better context awareness.</span>
+          </label>
+          {pdfFile && <p style={{ fontSize: "0.85rem", color: "var(--accent-cyan)", marginTop: "-0.5rem" }}>📄 {pdfFile.name}</p>}
 
           {!!files.length && (
             <div className="campaigns-selected-files">

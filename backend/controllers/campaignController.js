@@ -59,6 +59,9 @@ const buildCampaignPayload = (body) => ({
   dailyBudgetCap: Number(body.dailyBudgetCap || 0),
   repeatRate: Number(body.repeatRate || 3),
   estimatedCost: Number(body.estimatedCost || 0),
+  placement: body.placement || "other",
+  timing: body.timing || "standard",
+  audience: body.audience || "all",
   targeting: {
     locations: String(body.locations || body.city || "")
       .split(",").map((e) => e.trim()).filter(Boolean),
@@ -124,13 +127,34 @@ const createCampaign = asyncHandler(async (req, res) => {
 
   try {
     const payload = buildCampaignPayload(req.body);
-    const mediaAssets = mapMediaAssets(uploadedFiles);
+    const pdfFile = uploadedFiles.find((f) => f.mimetype === "application/pdf");
+    const mediaFiles = uploadedFiles.filter((f) => f.mimetype !== "application/pdf");
+    const mediaAssets = mapMediaAssets(mediaFiles);
     const verification = verifyCampaign({ ...payload, mediaAssets });
+
+    const contextPdf = pdfFile ? {
+      originalName: pdfFile.originalname,
+      storedName: pdfFile.filename,
+      publicUrl: `/uploads/campaigns/${pdfFile.filename}`,
+    } : null;
+
+    const { calculateCampaignEstimate } = require("../utils/campaignPricing");
+    const estimate = await calculateCampaignEstimate({
+      startDate: payload.startDate,
+      endDate: payload.endDate,
+      repeatRate: payload.repeatRate,
+      dailyBudgetCap: payload.dailyBudgetCap,
+      placement: payload.placement,
+      timing: payload.timing,
+      audience: payload.audience,
+    });
 
     const campaign = await Campaign.create({
       owner: req.user.userId,
       ...payload,
       mediaAssets,
+      contextPdf,
+      estimatedCost: estimate.breakdown.estimatedCost,
       verification,
       status: verification.status === "rejected" ? "rejected" : "pending_review",
       isPublic: false,
@@ -409,6 +433,13 @@ const emailCampaignReport = asyncHandler(async (req, res) => {
   res.status(200).json({ message: `Report sent to ${user.email}` });
 });
 
+const estimateCampaignCost = asyncHandler(async (req, res) => {
+  const { startDate, endDate, repeatRate, dailyBudgetCap, placement, timing, audience } = req.body;
+  const { calculateCampaignEstimate } = require("../utils/campaignPricing");
+  const estimate = await calculateCampaignEstimate({ startDate, endDate, repeatRate, dailyBudgetCap, placement, timing, audience });
+  res.status(200).json(estimate);
+});
+
 const compareCampaigns = asyncHandler(async (req, res) => {
   const campaignIds = String(req.query.campaignIds || "")
     .split(",")
@@ -447,4 +478,5 @@ module.exports = {
   compareCampaigns,
   getCampaignReport,
   emailCampaignReport,
+  estimateCampaignCost,
 };

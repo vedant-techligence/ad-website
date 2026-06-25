@@ -218,6 +218,20 @@ function CampaignDetailModal({ campaign, loading, error, onClose, onAction }) {
                 ) : (
                   <p>No media uploaded.</p>
                 )}
+
+                {campaign.contextPdf?.publicUrl && (
+                  <div style={{ marginTop: "1rem" }}>
+                    <h4>Context PDF</h4>
+                    <a
+                      href={resolveMediaUrl(campaign.contextPdf.publicUrl)}
+                      target="_blank"
+                      rel="noreferrer"
+                      style={{ display: "inline-flex", alignItems: "center", gap: "0.5rem", padding: "0.6rem 1rem", background: "rgba(0,168,204,0.1)", borderRadius: 6, color: "var(--accent-cyan)", fontWeight: 600, fontSize: "0.85rem", textDecoration: "none", border: "1px solid var(--accent-cyan)" }}
+                    >
+                      📄 {campaign.contextPdf.originalName}
+                    </a>
+                  </div>
+                )}
               </div>
             </div>
 

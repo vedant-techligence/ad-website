@@ -9,7 +9,7 @@ const cookieParser = require("cookie-parser");
 
 // ---- Route imports ----
 const authRoutes = require("./routes/auth");
-const campaignRoutes = require("./routes/campaign.routes");
+const campaignRoutes = require("./routes/campaigns");
 const dashboardRoutes = require("./routes/dashboard");
 const reportRoutes = require("./routes/reports");
 const notificationRoutes = require("./routes/notifications");
@@ -19,6 +19,7 @@ const paymentRoutes = require("./routes/payments");
 // admin routes
 const adminCampaignRoutes = require("./routes/campaigns.admin.routes");
 const adminUserRoutes = require("./routes/adminUsers");
+const pricingRoutes = require("./routes/pricing");
 const adminPaymentRoutes = require("./routes/admin.payments");
 const adminRobotRoutes = require("./routes/admin.robots");
 const adminAnalyticsRoutes = require("./routes/admin.analytics");
@@ -140,6 +141,7 @@ app.use("/api/integrations", integrationRoutes);
 // ---- Admin routes ----
 app.use("/api/admin/campaigns", adminCampaignRoutes);
 app.use("/api/admin/users", adminUserRoutes);
+app.use("/api/pricing", pricingRoutes);
 app.use("/api/admin/payments", adminPaymentRoutes);
 app.use("/api/admin/robots", adminRobotRoutes);
 app.use("/api/admin/analytics", adminAnalyticsRoutes);
