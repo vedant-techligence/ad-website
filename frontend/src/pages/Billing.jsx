@@ -14,7 +14,7 @@ const STATUS_LABELS = {
   cancelled: "Cancelled",
 };
 
-const BILLABLE_STATUSES = new Set(["draft", "pending_payment"]);
+const BILLABLE_STATUSES = new Set(["pending_payment"]);
 
 const currencyFormatter = new Intl.NumberFormat("en-IN", {
   style: "currency",
@@ -129,7 +129,7 @@ function Billing() {
               const refreshed = await API.get("/campaigns", {
                 headers: { Authorization: `Bearer ${token}` },
               });
-              setCampaigns(refreshed.data);
+              setCampaigns(refreshed.data.items || []);
             } catch {
               // Non-critical — user can refresh manually
             }
@@ -180,7 +180,7 @@ function Billing() {
           const refreshed = await API.get("/campaigns", {
             headers: { Authorization: `Bearer ${token}` },
           }).catch(() => null);
-          if (refreshed) setCampaigns(refreshed.data);
+          if (refreshed) setCampaigns(refreshed.data.items || []);
         }
       } else {
         setPaymentError(

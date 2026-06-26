@@ -8,7 +8,14 @@ const campaignCreateValidation = [
   body("destinationUrl")
     .optional({ values: "falsy" })
     .trim()
-    .isURL({ require_protocol: true })
+    .custom((value) => {
+      if (!value || value === "") return true;
+      const urlPattern = /^https?:\/\/.+/i;
+      if (!urlPattern.test(value)) {
+        throw new Error("Destination URL must start with http:// or https://");
+      }
+      return true;
+    })
     .withMessage("Destination URL must be valid."),
 ];
 
@@ -20,7 +27,14 @@ const campaignUpdateValidation = [
   body("destinationUrl")
     .optional({ values: "falsy" })
     .trim()
-    .isURL({ require_protocol: true })
+    .custom((value) => {
+      if (!value || value === "") return true;
+      const urlPattern = /^https?:\/\/.+/i;
+      if (!urlPattern.test(value)) {
+        throw new Error("Destination URL must start with http:// or https://");
+      }
+      return true;
+    })
     .withMessage("Destination URL must be valid."),
 ];
 

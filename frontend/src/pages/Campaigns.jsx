@@ -23,9 +23,10 @@ const INITIAL_FORM = {
 
 const STATUS_LABELS = {
   draft: "Draft",
-  pending_payment: "Awaiting payment",
+  pending_review: "Under Review",
+  pending_payment: "Approved — Payment Required",
   paid_pending_verification: "In verification",
-  public: "Public",
+  public: "Live",
   rejected: "Rejected",
   completed: "Completed",
   cancelled: "Cancelled",
@@ -33,6 +34,7 @@ const STATUS_LABELS = {
 
 const PUBLIC_LIKE_STATUSES = new Set(["public", "completed"]);
 const NEGATIVE_STATUSES = new Set(["rejected", "cancelled"]);
+const PAYMENT_REQUIRED_STATUSES = new Set(["pending_payment"]);
 
 const dateFormatter = new Intl.DateTimeFormat("en-IN", {
   dateStyle: "medium",
@@ -522,23 +524,51 @@ function Campaigns() {
 
             <label>
               Robot placement
-              <input
+              <select
                 name="robotPlacement"
                 value={form.robotPlacement}
                 onChange={handleChange}
-                placeholder="Hotel lobby, mall kiosk, hospital reception"
                 required
-              />
+              >
+                <option value="">Select robot location</option>
+                <optgroup label="Malls — Pune">
+                  <option value="Phoenix Marketcity Pune">Phoenix Marketcity Pune</option>
+                  <option value="Amanora Mall">Amanora Mall</option>
+                  <option value="Seasons Mall">Seasons Mall</option>
+                  <option value="Westend Mall">Westend Mall</option>
+                  <option value="Pavilion Mall">Pavilion Mall</option>
+                  <option value="Elpro City Square">Elpro City Square</option>
+                  <option value="The Pavillion">The Pavillion</option>
+                </optgroup>
+                <optgroup label="Hotels — Pune">
+                  <option value="JW Marriott Hotel Pune">JW Marriott Hotel Pune</option>
+                  <option value="Conrad Pune">Conrad Pune</option>
+                  <option value="The Ritz-Carlton, Pune">The Ritz-Carlton, Pune</option>
+                  <option value="Hyatt Regency Pune">Hyatt Regency Pune</option>
+                  <option value="Sheraton Grand Pune">Sheraton Grand Pune</option>
+                  <option value="Novotel Pune Nagar Road">Novotel Pune Nagar Road</option>
+                  <option value="Blue Diamond Pune">Blue Diamond Pune</option>
+                </optgroup>
+                <optgroup label="Other Locations">
+                  <option value="Hospital Reception">Hospital Reception</option>
+                  <option value="Metro Station">Metro Station</option>
+                  <option value="Airport Terminal">Airport Terminal</option>
+                  <option value="Corporate Office">Corporate Office</option>
+                  <option value="Other">Other</option>
+                </optgroup>
+              </select>
             </label>
 
             <label>
-              Destination URL
+              Destination URL (optional)
               <input
+                type="url"
                 name="destinationUrl"
                 value={form.destinationUrl}
                 onChange={handleChange}
                 placeholder="https://example.com/campaign"
               />
+              <span style={{ fontSize: "0.85rem", color: "var(--text-muted)" }}>Must include https:// or leave empty</span>
             </label>
 
             <label>
@@ -627,6 +657,9 @@ function Campaigns() {
               <div className="campaigns-estimate-row">
                 <span>Base cost ({estimate.durationDays} days)</span>
                 <span>₹{estimate.breakdown.baseCost?.toLocaleString("en-IN")}</span>
+              </div>
+              <div className="campaigns-estimate-row">
+                <span>{estimate.breakdown.videoDurationSec}s × ₹{estimate.breakdown.costPerSecond}/s × {estimate.breakdown.repeatRate}x × {estimate.durationDays}d</span>
               </div>
               <div className="campaigns-estimate-row">
                 <span>Placement ×{estimate.breakdown.placementMultiplier}</span>
@@ -809,7 +842,9 @@ function Campaigns() {
                   ? "campaign-badge-public"
                   : NEGATIVE_STATUSES.has(campaign.status)
                     ? "campaign-badge-rejected"
-                    : "campaign-badge-pending";
+                    : PAYMENT_REQUIRED_STATUSES.has(campaign.status)
+                      ? "campaign-badge-payment"
+                      : "campaign-badge-pending";
 
                 return (
                   <article className="campaign-card" key={campaign._id}>
@@ -826,6 +861,22 @@ function Campaigns() {
                     </div>
 
                     <p className="campaign-card-copy">{campaign.description}</p>
+
+                    {campaign.status === "pending_payment" && (
+                      <div className="campaign-payment-banner">
+                        <div className="campaign-payment-banner-left">
+                          <span className="campaign-payment-icon">💳</span>
+                          <div>
+                            <p className="campaign-payment-title">Your campaign has been approved!</p>
+                            <p className="campaign-payment-desc">Complete payment to make it go live on robot displays.</p>
+                            {campaign.estimatedCost > 0 && (
+                              <p className="campaign-payment-amount">Amount due: ₹{campaign.estimatedCost?.toLocaleString("en-IN")}</p>
+                            )}
+                          </div>
+                        </div>
+                        <Link to="/billing" className="campaign-payment-btn">Pay Now →</Link>
+                      </div>
+                    )}
 
                     {campaign.verification?.checkedAt ? (
                       <div className="campaign-card-audit">
