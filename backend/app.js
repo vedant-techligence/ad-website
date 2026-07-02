@@ -107,18 +107,6 @@ app.use(
   }),
 );
 
-// ---- Auth-specific rate limiter ----
-app.use(
-  "/api/auth",
-  rateLimit({
-    windowMs: 15 * 60 * 1000,
-    max: 20,
-    standardHeaders: true,
-    legacyHeaders: false,
-    message: { message: "Too many authentication attempts. Try again soon." },
-  }),
-);
-
 // ---- Static file serving ----
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 

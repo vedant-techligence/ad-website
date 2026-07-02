@@ -324,7 +324,7 @@ const getProfile = asyncHandler(async (req, res) => {
     throw new ApiError(404, "User not found.");
   }
 
-  if (user.isProfileComplete) {
+  if (!user.isProfileComplete) {
     await bootstrapDemoWorkspace(user);
   }
 
